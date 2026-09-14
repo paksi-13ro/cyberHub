@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Материалы — Cyber HUB</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main>
+    <div class="flex-between">
+        <h1 class="page-title">Материалы<small>Архив данных // Открытый доступ</small></h1>
+        <div id="add-material-wrap" class="hidden">
+            <button class="btn pink" id="open-add-material">+ Добавить материал</button>
+        </div>
+    </div>
+
+    <div id="materials-list" class="grid cols-2 mt-2"></div>
+    <p id="materials-empty" class="text-dim hidden mt-2">Пока пусто. Администратор ещё не добавил материалы.</p>
+</main>
+
+<script src="app.js"></script>
+<script>
+// ---------- Рендер материалов ----------
+async function renderMaterials() {
+    const list = document.getElementById('materials-list');
+    const empty = document.getElementById('materials-empty');
+
+    let items = [];
+    try {
+        items = await api.get('/materials');
+    } catch (err) {
+        list.innerHTML = '';
+        empty.textContent = 'Не удалось загрузить материалы: ' + err.message;
+        empty.classList.remove('hidden');
+        return;
+    }
+
+    if (items.length === 0) {
+        list.innerHTML = '';
+        empty.textContent = 'Пока пусто. Администратор ещё не добавил материалы.';
+        empty.classList.remove('hidden');
+        return;
+    }
+    empty.classList.add('hidden');
+
+    list.innerHTML = items.map(m => `
+        <div class="card accent-cyan" data-id="${m.id}">
+            <div class="flex-between">
+                <h3>${escapeHtml(m.title)}</h3>
+                <span class="tag">${escapeHtml(m.category || 'прочее')}</span>
+            </div>
+            <p style="white-space:pre-wrap; margin-top:.5rem">${escapeHtml(m.description)}</p>
+            ${m.fileUrl ? `
+                <div class="mt-1">
+                    <a href="${m.fileUrl}" download class="btn" style="font-size:.8rem;padding:.5rem 1rem">
+                        💾 Скачать файл
+                    </a>
+                    ${m.fileSize ? `<span class="text-dim" style="font-size:.8rem; margin-left:.5rem">${formatFileSize(m.fileSize)}</span>` : ''}
+                </div>
+            ` : ''}
+            <div class="mt-1 text-dim" style="font-size:.8rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem">
+                <span>Добавлено: ${escapeHtml(m.author)} · ${formatDate(m.createdAt)}</span>
+                <span>
+                    ${CURRENT_USER ? `<a href="#" class="fav-btn" data-id="${m.id}" style="text-decoration:none">${m.isFavorite ? '★ В избранном' : '☆ В избранное'}</a>` : ''}
+                    ${CURRENT_USER && CURRENT_USER.isAdmin ? ` · <a href="#" class="del-btn" data-id="${m.id}" style="color:var(--neon-pink);text-decoration:none">Удалить</a>` : ''}
+                </span>
+            </div>
+        </div>
+    `).join('');
+
+    document.querySelectorAll('.fav-btn').forEach(btn => {
+        btn.addEventListener('click', async e => {
+            e.preventDefault();
+            try {
+                await api.post(`/materials/${btn.dataset.id}/favorite`);
+                toast('Избранное обновлено', 'success');
+                renderMaterials();
+            } catch (err) {
+                toast(err.message, 'error');
+            }
+        });
+    });
+
+    document.querySelectorAll('.del-btn').forEach(btn => {
+        btn.addEventListener('click', async e => {
+            e.preventDefault();
+            if (!confirm('Удалить материал?')) return;
+            try {
+                await api.delete(`/materials/${btn.dataset.id}`);
+                toast('Материал удалён', 'success');
+                renderMaterials();
+            } catch (err) {
+                toast(err.message, 'error');
+            }
+        });
+    });
+}
+
+// ---------- Модалка добавления (для админа) ----------
+function openAddModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal">
+            <button class="modal-close" aria-label="Закрыть">×</button>
+            <h2>Новый материал</h2>
+            <form class="form" id="material-form">
+                <label>Название</label>
+                <input type="text" id="m-title" required maxlength="120">
+                <label>Категория</label>
+                <select id="m-category">
+                    <option>правила</option>
+                    <option>хоумбрю</option>
+                    <option>снаряжение</option>
+                    <option>NPC</option>
+                    <option>карты</option>
+                    <option>лор</option>
+                    <option>прочее</option>
+                </select>
+                <label>Описание</label>
+                <textarea id="m-desc" required></textarea>
+                <label>Файл (необязательно, до 10 МБ)</label>
+                <input type="file" id="m-file">
+                <button type="submit" class="btn pink mt-1">Опубликовать</button>
+                <p class="msg error" id="m-msg"></p>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.querySelector('.modal-close').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('#material-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const title = document.getElementById('m-title').value.trim();
+        const category = document.getElementById('m-category').value;
+        const description = document.getElementById('m-desc').value.trim();
+        const fileInput = document.getElementById('m-file');
+        const msg = document.getElementById('m-msg');
+
+        const fd = new FormData();
+        fd.append('title', title);
+        fd.append('category', category);
+        fd.append('description', description);
+        if (fileInput.files[0]) fd.append('file', fileInput.files[0]);
+
+        try {
+            await api.post('/materials', fd);
+            close();
+            toast('Материал опубликован', 'success');
+            renderMaterials();
+        } catch (err) {
+            msg.textContent = err.message || 'Не удалось загрузить';
+        }
+    });
+}
+
+// ---------- Init ----------
+async function initMaterialsPage() {
+    await loadSession();
+    renderHeader();
+
+    if (CURRENT_USER && CURRENT_USER.isAdmin) {
+        document.getElementById('add-material-wrap').classList.remove('hidden');
+        document.getElementById('open-add-material').addEventListener('click', openAddModal);
+    }
+    renderMaterials();
+}
+
+document.addEventListener('DOMContentLoaded', initMaterialsPage);
+</script>
+</body>
+</html>

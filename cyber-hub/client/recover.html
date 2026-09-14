@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Восстановление доступа — Cyber HUB</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main>
+    <h1 class="page-title">Восстановление доступа<small>Сброс пароля по email</small></h1>
+
+    <div class="card accent-yellow mt-2" style="max-width:560px;margin:2rem auto">
+        <!-- Шаг 1: запрос письма -->
+        <form class="form" id="step-request">
+            <p class="text-dim">Введите email, привязанный к аккаунту. Если аккаунт существует, мы отправим ссылку для сброса.</p>
+            <label>Email</label>
+            <input type="email" id="rec-email" required>
+            <button type="submit" class="btn yellow">Отправить ссылку</button>
+            <p class="msg" id="rec-msg1"></p>
+            <a href="account.html" class="text-dim" style="font-size:.85rem">← Вернуться к входу</a>
+        </form>
+
+        <!-- Шаг 2: новый пароль (если в URL ?token=) -->
+        <form class="form hidden" id="step-reset">
+            <p class="text-dim">Придумайте новый пароль (минимум 6 символов).</p>
+            <label>Новый пароль</label>
+            <input type="password" id="rec-newpass" required minlength="6">
+            <label>Повторите пароль</label>
+            <input type="password" id="rec-newpass2" required minlength="6">
+            <button type="submit" class="btn yellow">Сбросить пароль</button>
+            <p class="msg" id="rec-msg2"></p>
+        </form>
+    </div>
+</main>
+
+<script src="app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadSession();
+    renderHeader();
+
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
+
+    if (token) {
+        // Показываем форму сброса
+        document.getElementById('step-request').classList.add('hidden');
+        document.getElementById('step-reset').classList.remove('hidden');
+
+        document.getElementById('step-reset').addEventListener('submit', async e => {
+            e.preventDefault();
+            const p1 = document.getElementById('rec-newpass').value;
+            const p2 = document.getElementById('rec-newpass2').value;
+            const msg = document.getElementById('rec-msg2');
+            msg.textContent = '';
+            msg.classList.remove('success');
+
+            if (p1 !== p2) {
+                msg.classList.add('error');
+                msg.textContent = 'Пароли не совпадают.';
+                return;
+            }
+            try {
+                await api.post('/auth/reset-password', { token, newPassword: p1 });
+                toast('Пароль сброшен. Войди с новым.', 'success');
+                setTimeout(() => location.href = 'account.html', 800);
+            } catch (err) {
+                msg.classList.add('error');
+                msg.textContent = err.message;
+            }
+        });
+    } else {
+        // Форма запроса
+        document.getElementById('step-request').addEventListener('submit', async e => {
+            e.preventDefault();
+            const email = document.getElementById('rec-email').value.trim();
+            const msg = document.getElementById('rec-msg1');
+            msg.textContent = '';
+            msg.classList.remove('success');
+            try {
+                const res = await api.post('/auth/forgot-password', { email });
+                msg.classList.add('success');
+                msg.textContent = res.message || 'Письмо отправлено. Проверь почту.';
+            } catch (err) {
+                msg.classList.add('error');
+                msg.textContent = err.message;
+            }
+        });
+    }
+});
+</script>
+</body>
+</html>

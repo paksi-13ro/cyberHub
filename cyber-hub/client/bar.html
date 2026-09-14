@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Бар «У слепого взгляда» — Cyber HUB</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main>
+    <h1 class="page-title">Бар «У слепого взгляда»<small>Donations & Cocktails // Node 24/7</small></h1>
+
+    <div class="quote">
+        «Здесь не спрашивают, откуда ты пришёл. Здесь спрашивают, что ты пьёшь. Плата — не кредиты. Плата — память.»
+        <span class="author">— вывеска над барной стойкой</span>
+    </div>
+
+    <div class="flex-between mt-2">
+        <h2>Меню бара</h2>
+        <div>
+            <button class="btn yellow" id="open-create-cocktail">+ Придумать свой коктейль</button>
+        </div>
+    </div>
+
+    <div id="cocktails-list" class="grid cols-3 mt-1"><p class="text-dim">Загрузка…</p></div>
+
+    <section class="mt-2">
+        <h2>Доска почёта</h2>
+        <p class="text-dim mb-1">Самые щедрые гости бара. Топ-10 по сумме вклада.</p>
+        <div id="top-donors" class="card accent-yellow"><p class="text-dim">Загрузка…</p></div>
+    </section>
+
+    <section class="mt-2">
+        <h2>Все пожертвования</h2>
+        <div id="all-donations" class="card accent-cyan"><p class="text-dim">Загрузка…</p></div>
+    </section>
+</main>
+
+<script src="app.js"></script>
+<script>
+let cocktailsCache = [];
+
+async function renderCocktails() {
+    const wrap = document.getElementById('cocktails-list');
+    try {
+        cocktailsCache = await api.get('/donations/cocktails');
+    } catch (err) {
+        wrap.innerHTML = `<p class="msg error">Ошибка: ${escapeHtml(err.message)}</p>`;
+        return;
+    }
+
+    wrap.innerHTML = cocktailsCache.map(c => `
+        <div class="card accent-purple">
+            <div class="flex-between">
+                <h3 style="color:var(--neon-purple)">${escapeHtml(c.name)}</h3>
+                ${c.base
+                    ? '<span class="tag">классика</span>'
+                    : '<span class="tag" style="border-color:var(--neon-green);color:var(--neon-green)">гость</span>'}
+            </div>
+            <p class="text-dim" style="min-height:3.4em">${escapeHtml(c.desc)}</p>
+            <div class="flex-between mt-1">
+                <b style="color:var(--neon-yellow); font-size:1.2rem">${formatMoney(c.price)}</b>
+                <button class="btn yellow order-btn" data-id="${c.id}">Заказать</button>
+            </div>
+            <p class="text-dim" style="font-size:.75rem; margin-top:.4rem">Автор: ${escapeHtml(c.author || 'Легенда бара')}</p>
+        </div>
+    `).join('');
+
+    document.querySelectorAll('.order-btn').forEach(b => {
+        b.addEventListener('click', () => openOrderModal(b.dataset.id));
+    });
+}
+
+function openOrderModal(cocktailId) {
+    const c = cocktailsCache.find(x => x.id === cocktailId);
+    if (!c) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal">
+            <button class="modal-close">×</button>
+            <h2>Заказ: ${escapeHtml(c.name)}</h2>
+            <p class="text-dim mb-1">${escapeHtml(c.desc)}</p>
+            <form class="form" id="order-form">
+                <label>Ваше имя (или ник)</label>
+                <input type="text" id="donor-name" maxlength="40" value="${CURRENT_USER ? escapeHtml(CURRENT_USER.username) : ''}" required>
+                <label>Сумма (не меньше ${formatMoney(c.price)})</label>
+                <input type="number" id="donor-amount" min="${c.price}" step="50" value="${c.price}" required>
+                <label>Комментарий (необязательно)</label>
+                <input type="text" id="donor-comment" maxlength="100" placeholder="За что пьём?">
+                <button type="submit" class="btn yellow mt-1">Оплатить и выпить</button>
+                <p class="msg error" id="order-msg"></p>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.querySelector('.modal-close').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('#order-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const name = document.getElementById('donor-name').value.trim();
+        const amount = parseInt(document.getElementById('donor-amount').value, 10);
+        const comment = document.getElementById('donor-comment').value.trim();
+        const msg = document.getElementById('order-msg');
+
+        try {
+            await api.post('/donations', { name, amount, comment, cocktailId: c.id });
+            close();
+            toast(`Спасибо, ${name}! ${c.name} уже на стойке.`, 'success');
+            renderDonations();
+        } catch (err) {
+            msg.textContent = err.message;
+        }
+    });
+}
+
+function openCreateModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal">
+            <button class="modal-close">×</button>
+            <h2>Придумать свой коктейль</h2>
+            <p class="text-dim mb-1">Он появится в меню. Чем дороже — тем выше в топе доски почёта.</p>
+            <form class="form" id="create-form">
+                <label>Название</label>
+                <input type="text" id="c-name" maxlength="60" required>
+                <label>Описание</label>
+                <textarea id="c-desc" maxlength="300" required></textarea>
+                <label>Цена (₽, минимум 100)</label>
+                <input type="number" id="c-price" min="100" step="50" value="500" required>
+                <button type="submit" class="btn pink mt-1">Добавить в меню</button>
+                <p class="msg error" id="create-msg"></p>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.querySelector('.modal-close').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('#create-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const name = document.getElementById('c-name').value.trim();
+        const desc = document.getElementById('c-desc').value.trim();
+        const price = parseInt(document.getElementById('c-price').value, 10);
+        const msg = document.getElementById('create-msg');
+
+        try {
+            await api.post('/donations/cocktails', { name, desc, price });
+            close();
+            toast('Коктейль добавлен в меню', 'success');
+            renderCocktails();
+        } catch (err) {
+            msg.textContent = err.message;
+        }
+    });
+}
+
+async function renderDonations() {
+    // Топ
+    const topWrap = document.getElementById('top-donors');
+    try {
+        const top = await api.get('/donations/top');
+        if (top.length === 0) {
+            topWrap.innerHTML = '<p class="text-dim">Пока никто не оставил вклад. Будь первым — закажи «Серебряную руку».</p>';
+        } else {
+            topWrap.innerHTML = top.map((t, i) => `
+                <div class="flex-between" style="padding:.6rem 0; border-bottom:1px dashed var(--border)">
+                    <span>
+                        <b style="color:var(--neon-yellow); margin-right:.6rem">#${i+1}</b>
+                        ${escapeHtml(t.name)}
+                        <span class="text-dim" style="font-size:.8rem"> · ${t.count} заказ${t.count>1?'ов':''}</span>
+                    </span>
+                    <b style="color:var(--neon-yellow)">${formatMoney(t.amount)}</b>
+                </div>
+            `).join('');
+        }
+    } catch (err) {
+        topWrap.innerHTML = `<p class="msg error">Ошибка: ${escapeHtml(err.message)}</p>`;
+    }
+
+    // Все донаты
+    const allWrap = document.getElementById('all-donations');
+    try {
+        const all = await api.get('/donations');
+        if (all.length === 0) {
+            allWrap.innerHTML = '<p class="text-dim">Журнал пуст. Первый заказ — за тобой.</p>';
+        } else {
+            allWrap.innerHTML = all.map(d => `
+                <div style="padding:.6rem 0; border-bottom:1px dashed var(--border)">
+                    <div class="flex-between">
+                        <span><b style="color:var(--neon-cyan)">${escapeHtml(d.name)}</b> — «${escapeHtml(d.cocktail)}»</span>
+                        <b style="color:var(--neon-yellow)">${formatMoney(d.amount)}</b>
+                    </div>
+                    ${d.comment ? `<div class="text-dim" style="font-size:.85rem">«${escapeHtml(d.comment)}»</div>` : ''}
+                    <div class="text-dim" style="font-size:.75rem">${formatDate(d.createdAt)}</div>
+                </div>
+            `).join('');
+        }
+    } catch (err) {
+        allWrap.innerHTML = `<p class="msg error">Ошибка: ${escapeHtml(err.message)}</p>`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadSession();
+    renderHeader();
+    renderCocktails();
+    renderDonations();
+    document.getElementById('open-create-cocktail').addEventListener('click', openCreateModal);
+});
+</script>
+</body>
+</html>

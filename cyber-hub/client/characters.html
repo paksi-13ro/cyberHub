@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Листы персонажа — Cyber HUB</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main>
+    <h1 class="page-title">Листы персонажа<small>Досье эджраннеров // В разработке</small></h1>
+
+    <div class="card accent-pink mt-2" style="text-align:center; padding: 3rem 2rem;">
+        <h2 style="color:var(--neon-pink)">Раздел в разработке</h2>
+        <p class="text-dim" style="max-width:640px; margin: 1rem auto">
+            Здесь появятся твои листы персонажей: характеристики, навыки, снаряжение,
+            биография и связи с Найт-Сити. Пока функция подготавливается.
+        </p>
+        <div class="quote" style="max-width:600px; margin: 2rem auto; text-align:left">
+            «В этом городе важно не то, кем ты был. Важно — кем ты станешь, когда останешься один на один с хромом и ночью.»
+            <span class="author">— из наставлений фиксера</span>
+        </div>
+    </div>
+
+    <section class="mt-2">
+        <div id="sheet-placeholder"></div>
+    </section>
+</main>
+
+<script src="app.js"></script>
+<script>
+async function initCharactersPage() {
+    await loadSession();
+    renderHeader();
+
+    const el = document.getElementById('sheet-placeholder');
+    if (CURRENT_USER) {
+        el.innerHTML = `<p class="text-dim">Привет, <b style="color:var(--neon-yellow)">${escapeHtml(CURRENT_USER.username)}</b>. Функция листов появится в следующем обновлении.</p>`;
+    } else {
+        el.innerHTML = `<p class="text-dim">Чтобы сохранять листы, <a href="account.html">войди в аккаунт</a>.</p>`;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initCharactersPage);
+</script>
+</body>
+</html>

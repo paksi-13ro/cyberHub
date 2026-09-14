@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  email         String?  @unique
+  password      String?  // bcrypt hash; null для OAuth-only пользователей
+  provider      String?  // 'google' | 'yandex' | 'vk' | null
+  providerId    String?  // ID от OAuth-провайдера
+  avatar        String?
+  isAdmin       Boolean  @default(false)
+  favorites     Favorite[]
+  sheets        CharacterSheet[]
+  donations     Donation[]
+  cocktails     Cocktail[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([provider, providerId])
+}
+
+model Material {
+  id          String   @id @default(cuid())
+  title       String
+  category    String
+  description String
+  fileUrl     String?
+  fileSize    Int?
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  favorites   Favorite[]
+  createdAt   DateTime @default(now())
+
+  @@index([authorId])
+  @@index([category])
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  userId     String
+  materialId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, materialId])
+}
+
+model CharacterSheet {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  data      Json
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Cocktail {
+  id        String   @id @default(cuid())
+  name      String
+  desc      String
+  price     Int
+  base      Boolean  @default(false)
+  authorId  String?
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  donations Donation[]
+  createdAt DateTime @default(now())
+}
+
+model Donation {
+  id         String   @id @default(cuid())
+  name       String
+  amount     Int
+  comment    String?
+  cocktailId String
+  cocktail   Cocktail @relation(fields: [cocktailId], references: [id])
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

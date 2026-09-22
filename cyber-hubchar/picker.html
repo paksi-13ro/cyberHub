@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Подбор координат</title>
+<style>
+    body { margin: 0; font-family: Arial; background: #1a1a1f; color: #eee; }
+    .layout { display: flex; height: 100vh; }
+    .canvas-wrap { flex: 1; overflow: auto; background: #000; cursor: crosshair; padding: 1rem; text-align: center; }
+    .selection { position: fixed; border: 2px solid #ff2d20; background: rgba(255,45,32,0.2); pointer-events: none; z-index: 10; }
+    .sidebar { width: 360px; background: #12121c; padding: 1rem; overflow-y: auto; border-left: 2px solid #ff2d20; }
+    .sidebar h2 { color: #ff2d20; font-size: 1rem; margin: 0 0 0.8rem; }
+    .sidebar input, .sidebar select { width: 100%; padding: 0.5rem; background: #0a0a12; border: 1px solid #333; color: #eee; border-radius: 4px; box-sizing: border-box; margin-bottom: 0.5rem; }
+    .sidebar button { width: 100%; padding: 0.7rem; background: #ff2d20; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; margin-bottom: 0.5rem; }
+    .code-output { background: #0a0a12; border: 1px solid #333; border-radius: 4px; padding: 0.6rem; font-family: monospace; font-size: 0.7rem; color: #39ff9e; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+    .info { font-size: 0.75rem; color: #888; line-height: 1.5; margin-bottom: 0.8rem; }
+</style>
+</head>
+<body>
+<div class="layout">
+    <div class="canvas-wrap" id="canvas">
+        <svg id="sheetSvg" viewBox="0 0 1400 1000" xmlns="http://www.w3.org/2000/svg" style="max-height:calc(100vh - 2rem); background:#fff;">
+            <image href="img/page-1.jpg" x="0" y="0" width="1400" height="1000"/>
+        </svg>
+        <div class="selection" id="selection" style="display:none"></div>
+    </div>
+    <div class="sidebar">
+        <h2>Подбор координат (SVG)</h2>
+        <div class="info">
+            1. Тяни мышкой по картинке<br>
+            2. Заполни данные<br>
+            3. Сохрани → код появится справа<br>
+            4. Копируй в свой index.html
+        </div>
+        <label>Placeholder</label>
+        <input type="text" id="fieldName" placeholder="Имя персонажа">
+        <label>ID поля</label>
+        <input type="text" id="fieldId" placeholder="char-name">
+        <label>Тип</label>
+        <select id="fieldType">
+            <option value="text">text</option>
+            <option value="number">number</option>
+            <option value="textarea">textarea</option>
+        </select>
+        <button id="saveBtn">Сохранить поле</button>
+        <h2>Код</h2>
+        <div class="code-output" id="output"></div>
+        <button id="copyBtn">Скопировать весь код</button>
+        <button id="clearBtn" style="background:#444;">Очистить</button>
+    </div>
+</div>
+<script>
+    const svg = document.getElementById('sheetSvg');
+    const canvas = document.getElementById('canvas');
+    const sel = document.getElementById('selection');
+    const output = document.getElementById('output');
+    let startX, startY, isDragging = false, fields = [], lastRect = null;
+    const vb = svg.getAttribute('viewBox').split(' ').map(Number);
+    const vbX = vb[0], vbY = vb[1], vbW = vb[2], vbH = vb[3];
+
+    function toVB(cx, cy) {
+        const r = svg.getBoundingClientRect();
+        return { x: vbX + (cx - r.left) * (vbW / r.width), y: vbY + (cy - r.top) * (vbH / r.height) };
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        const p = toVB(e.clientX, e.clientY);
+        startX = p.x; startY = p.y; isDragging = true;
+        sel.style.display = 'block';
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const p = toVB(e.clientX, e.clientY);
+        const x = Math.min(startX, p.x), y = Math.min(startY, p.y);
+        const w = Math.abs(p.x - startX), h = Math.abs(p.y - startY);
+        const r = svg.getBoundingClientRect();
+        const sx = r.width / vbW, sy = r.height / vbH;
+        sel.style.left = (r.left + (x - vbX) * sx) + 'px';
+        sel.style.top = (r.top + (y - vbY) * sy) + 'px';
+        sel.style.width = (w * sx) + 'px';
+        sel.style.height = (h * sy) + 'px';
+        lastRect = { x, y, w, h };
+    });
+
+    canvas.addEventListener('mouseup', () => { isDragging = false; });
+
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        if (!lastRect) { alert('Сначала выдели область'); return; }
+        const name = document.getElementById('fieldName').value.trim();
+        const id = document.getElementById('fieldId').value.trim();
+        const type = document.getElementById('fieldType').value;
+        if (!id) { alert('Введи ID'); return; }
+        const { x, y, w, h } = lastRect;
+        const tag = type === 'textarea' ? 'textarea' : 'input';
+        const typeAttr = type === 'textarea' ? '' : ` type="${type}"`;
+        const align = type === 'number' ? 'text-align:center;' : '';
+        const code = `<!-- ${name || id} -->
+<foreignObject x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}">
+    <${tag}${typeAttr} xmlns="http://www.w3.org/1999/xhtml" id="${id}" placeholder="${name}" class="sheet-field" style="${align}">${''}</${tag}>
+</foreignObject>
+`;
+        fields.push(code);
+        output.textContent = fields.join('\n');
+        document.getElementById('fieldName').value = '';
+        document.getElementById('fieldId').value = '';
+        sel.style.display = 'none';
+        lastRect = null;
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', () => {
+        navigator.clipboard.writeText(output.textContent).then(() => alert('Скопировано!'));
+    });
+    document.getElementById('clearBtn').addEventListener('click', () => {
+        if (confirm('Очистить?')) { fields = []; output.textContent = ''; }
+    });
+</script>
+</body>
+</html>

@@ -8,19 +8,23 @@
     .layout { display: flex; height: 100vh; }
     .canvas-wrap { flex: 1; overflow: auto; background: #000; cursor: crosshair; padding: 1rem; text-align: center; }
     .selection { position: fixed; border: 2px solid #ff2d20; background: rgba(255,45,32,0.2); pointer-events: none; z-index: 10; }
-    .sidebar { width: 360px; background: #12121c; padding: 1rem; overflow-y: auto; border-left: 2px solid #ff2d20; }
+    .sidebar { width: 380px; background: #12121c; padding: 1rem; overflow-y: auto; border-left: 2px solid #ff2d20; }
     .sidebar h2 { color: #ff2d20; font-size: 1rem; margin: 0 0 0.8rem; }
-    .sidebar input, .sidebar select { width: 100%; padding: 0.5rem; background: #0a0a12; border: 1px solid #333; color: #eee; border-radius: 4px; box-sizing: border-box; margin-bottom: 0.5rem; }
+    .sidebar h3 { color: #ff2d20; font-size: 0.85rem; margin: 1rem 0 0.4rem; text-transform: uppercase; letter-spacing: 1px; }
+    .sidebar label { display: block; font-size: 0.7rem; color: #888; margin-top: 0.5rem; margin-bottom: 0.2rem; }
+    .sidebar input, .sidebar select { width: 100%; padding: 0.5rem; background: #0a0a12; border: 1px solid #333; color: #eee; border-radius: 4px; box-sizing: border-box; }
     .sidebar button { width: 100%; padding: 0.7rem; background: #ff2d20; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; margin-bottom: 0.5rem; }
-    .code-output { background: #0a0a12; border: 1px solid #333; border-radius: 4px; padding: 0.6rem; font-family: monospace; font-size: 0.7rem; color: #39ff9e; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
-    .info { font-size: 0.75rem; color: #888; line-height: 1.5; margin-bottom: 0.8rem; }
+    .sidebar button:hover { background: #d92015; }
+    .code-output { background: #0a0a12; border: 1px solid #333; border-radius: 4px; padding: 0.6rem; font-family: monospace; font-size: 0.68rem; color: #39ff9e; white-space: pre-wrap; max-height: 250px; overflow-y: auto; margin-top: 0.5rem; }
+    .info { font-size: 0.72rem; color: #888; line-height: 1.4; margin-bottom: 0.6rem; }
+    .hint { color: #ffd60a; font-size: 0.68rem; margin-top: 0.3rem; line-height: 1.3; }
 </style>
 </head>
 <body>
 <div class="layout">
     <div class="canvas-wrap" id="canvas">
         <svg id="sheetSvg" viewBox="0 0 1400 1000" xmlns="http://www.w3.org/2000/svg" style="max-height:calc(100vh - 2rem); background:#fff;">
-            <image href="img/page-1.jpg" x="0" y="0" width="1400" height="1000"/>
+            <image href="img/page-2.jpg" x="0" y="0" width="1400" height="1000"/>
         </svg>
         <div class="selection" id="selection" style="display:none"></div>
     </div>
@@ -32,18 +36,34 @@
             3. Сохрани → код появится справа<br>
             4. Копируй в свой index.html
         </div>
-        <label>Placeholder</label>
-        <input type="text" id="fieldName" placeholder="Имя персонажа">
-        <label>ID поля</label>
+
+        <h3>Поле</h3>
+
+        <label>Placeholder (текст-подсказка)</label>
+        <input type="text" id="fieldName" placeholder="Например: Имя">
+
+        <label>ID поля (уникальный!)</label>
         <input type="text" id="fieldId" placeholder="char-name">
+
         <label>Тип</label>
         <select id="fieldType">
-            <option value="text">text</option>
-            <option value="number">number</option>
-            <option value="textarea">textarea</option>
+            <option value="text">text — обычный ввод</option>
+            <option value="number">number — числа (УР)</option>
+            <option value="textarea">textarea — многострочный</option>
+            <option value="readonly">readonly — только чтение (STAT / СУМ)</option>
+            <option value="checkbox">checkbox — галочка (имплант)</option>
         </select>
-        <button id="saveBtn">Сохранить поле</button>
-        <h2>Код</h2>
+
+        <label id="dataStatLabel" style="display:none;">
+            data-stat (id характеристики: int, rea, lov, teh, har, vol, yda, sko, tel, emp)
+        </label>
+        <input type="text" id="dataStat" placeholder="vol" style="display:none;">
+
+        <div class="hint" id="hint"></div>
+
+        <button id="saveBtn" style="margin-top:1rem;">Сохранить поле</button>
+
+        <h3>Код</h3>
         <div class="code-output" id="output"></div>
         <button id="copyBtn">Скопировать весь код</button>
         <button id="clearBtn" style="background:#444;">Очистить</button>
@@ -54,9 +74,32 @@
     const canvas = document.getElementById('canvas');
     const sel = document.getElementById('selection');
     const output = document.getElementById('output');
+    const typeSelect = document.getElementById('fieldType');
+    const dataStatInput = document.getElementById('dataStat');
+    const dataStatLabel = document.getElementById('dataStatLabel');
+    const hint = document.getElementById('hint');
+
     let startX, startY, isDragging = false, fields = [], lastRect = null;
     const vb = svg.getAttribute('viewBox').split(' ').map(Number);
     const vbX = vb[0], vbY = vb[1], vbW = vb[2], vbH = vb[3];
+
+    // Показываем / скрываем поле data-stat в зависимости от типа
+    typeSelect.addEventListener('change', () => {
+        const t = typeSelect.value;
+        const showDataStat = (t === 'readonly');
+        dataStatLabel.style.display = showDataStat ? 'block' : 'none';
+        dataStatInput.style.display = showDataStat ? 'block' : 'none';
+
+        if (t === 'readonly') {
+            hint.textContent = 'Если это STAT — укажи id характеристики (vol, int и т.д.). Если это СУМ — оставь пустым.';
+        } else if (t === 'checkbox') {
+            hint.textContent = 'Галочка-клетка для отметки имплантов.';
+        } else if (t === 'number') {
+            hint.textContent = 'УР навыка — ввод пользователя.';
+        } else {
+            hint.textContent = '';
+        }
+    });
 
     function toVB(cx, cy) {
         const r = svg.getBoundingClientRect();
@@ -86,24 +129,61 @@
     canvas.addEventListener('mouseup', () => { isDragging = false; });
 
     document.getElementById('saveBtn').addEventListener('click', () => {
-        if (!lastRect) { alert('Сначала выдели область'); return; }
+        if (!lastRect) { alert('Сначала выдели область на картинке'); return; }
+
         const name = document.getElementById('fieldName').value.trim();
         const id = document.getElementById('fieldId').value.trim();
-        const type = document.getElementById('fieldType').value;
-        if (!id) { alert('Введи ID'); return; }
+        const type = typeSelect.value;
+        const dataStat = dataStatInput.value.trim();
+
+        if (!id) { alert('Введи ID поля (уникальный)'); return; }
+
         const { x, y, w, h } = lastRect;
-        const tag = type === 'textarea' ? 'textarea' : 'input';
-        const typeAttr = type === 'textarea' ? '' : ` type="${type}"`;
-        const align = type === 'number' ? 'text-align:center;' : '';
-        const code = `<!-- ${name || id} -->
-<foreignObject x="${x.toFixed(0)}" y="${y.toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}">
-    <${tag}${typeAttr} xmlns="http://www.w3.org/1999/xhtml" id="${id}" placeholder="${name}" class="sheet-field" style="${align}">${''}</${tag}>
+        const X = x.toFixed(0), Y = y.toFixed(0), W = w.toFixed(0), H = h.toFixed(0);
+
+        let code = '';
+
+        if (type === 'readonly') {
+            const dataAttr = dataStat ? ` data-stat="${dataStat}"` : '';
+            code = `<!-- ${name || id} (${dataStat ? 'STAT: ' + dataStat : 'СУМ'}) -->
+<foreignObject x="${X}" y="${Y}" width="${W}" height="${H}">
+    <div xmlns="http://www.w3.org/1999/xhtml" id="${id}" class="sheet-readonly"${dataAttr}></div>
 </foreignObject>
 `;
+        } else if (type === 'checkbox') {
+            code = `<!-- ${name || id} (чекбокс) -->
+<foreignObject x="${X}" y="${Y}" width="${W}" height="${H}">
+    <input type="checkbox" xmlns="http://www.w3.org/1999/xhtml" id="${id}" class="sheet-checkbox"/>
+</foreignObject>
+`;
+        } else if (type === 'textarea') {
+            code = `<!-- ${name || id} -->
+<foreignObject x="${X}" y="${Y}" width="${W}" height="${H}">
+    <textarea xmlns="http://www.w3.org/1999/xhtml" id="${id}" placeholder="${name}" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+</foreignObject>
+`;
+        } else if (type === 'number') {
+            code = `<!-- ${name || id} -->
+<foreignObject x="${X}" y="${Y}" width="${W}" height="${H}">
+    <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="${id}" placeholder="${name}" class="sheet-field" style="text-align:center;"/>
+</foreignObject>
+`;
+        } else {
+            // text
+            code = `<!-- ${name || id} -->
+<foreignObject x="${X}" y="${Y}" width="${W}" height="${H}">
+    <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="${id}" placeholder="${name}" class="sheet-field"/>
+</foreignObject>
+`;
+        }
+
         fields.push(code);
         output.textContent = fields.join('\n');
+
+        // Очистка
         document.getElementById('fieldName').value = '';
         document.getElementById('fieldId').value = '';
+        dataStatInput.value = '';
         sel.style.display = 'none';
         lastRect = null;
     });
@@ -112,7 +192,7 @@
         navigator.clipboard.writeText(output.textContent).then(() => alert('Скопировано!'));
     });
     document.getElementById('clearBtn').addEventListener('click', () => {
-        if (confirm('Очистить?')) { fields = []; output.textContent = ''; }
+        if (confirm('Очистить всё?')) { fields = []; output.textContent = ''; }
     });
 </script>
 </body>

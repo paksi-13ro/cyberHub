@@ -40,7 +40,8 @@ if (process.env.GOOGLE_CLIENT_ID) {
                             email,
                             provider: 'google',
                             providerId: profile.id,
-                            avatar: profile.photos?.[0]?.value
+                            avatar: profile.photos?.[0]?.value,
+                            termsAcceptedAt: new Date()
                         }
                     });
                 }

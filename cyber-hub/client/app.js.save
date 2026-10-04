@@ -38,10 +38,7 @@ const api = {
         return this.request(path, { method: 'PATCH', body: JSON.stringify(body) });
     },
     put(path, body) {
-        return this.request(path, {
-            method: 'PUT',
-            body: body instanceof FormData ? body : JSON.stringify(body)
-        });
+        return this.request(path, { method: 'PUT', body: JSON.stringify(body) });
     },
     delete(path) { return this.request(path, { method: 'DELETE' }); }
 };
@@ -65,8 +62,8 @@ async function login(username, password) {
     return data;
 }
 
-async function register(username, password, email, agree) {
-    const data = await api.post('/auth/register', { username, password, email, agree });
+async function register(username, password) {
+    const data = await api.post('/auth/register', { username, password });
     CURRENT_USER = data.user;
     return data;
 }
@@ -83,7 +80,6 @@ const NAV_ITEMS = [
     { href: 'characters.html', label: 'Листы персонажа' },
     { href: 'bar.html',        label: 'Бар' },
     { href: 'account.html',    label: 'Аккаунт' },
-    { href: 'chat.html',       label: 'Чат' },
 ];
 
 function renderHeader() {
@@ -117,24 +113,7 @@ function renderHeader() {
         </div>
     `;
     document.body.prepend(header);
-    // ---------- Футер ----------
-    const oldFooter = document.querySelector('footer.site-footer');
-    if (oldFooter) oldFooter.remove();
-
-    const footer = document.createElement('footer');
-    footer.className = 'site-footer';
-    footer.innerHTML = `
-        <div class="footer-inner">
-            <div>© ${new Date().getFullYear()} Cyber HUB. Проект для сообщества Cyberpunk RED.</div>
-            <div class="footer-links">
-                <a href="terms.html">Пользовательское соглашение</a>
-                <a href="offer.html">Публичная оферта</a>
-                <a href="requisites.html">Реквизиты</a>
-                <a href="recover.html">Восстановление доступа</a>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(footer);
+    
 
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) logoutBtn.addEventListener('click', async e => {

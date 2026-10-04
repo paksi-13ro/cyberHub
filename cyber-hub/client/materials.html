@@ -3,8 +3,165 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Материалы — Cyber HUB</title>
+<title>Материалы Cyberpunk RED — правила, лор, карты | Cyber HUB</title>
+<meta name="description" content="Скачать материалы для настольной игры Cyberpunk RED: правила, лор Найт-Сити, карты, снаряжение, NPC, ваншоты, готовые персонажи. Бесплатно и по подписке.">
+<meta name="keywords" content="Cyberpunk RED материалы, правила Cyberpunk RED, лор Найт-Сити, карты киберпанк, NPC Cyberpunk RED, ваншоты, хоумбрю">
+<meta property="og:title" content="Материалы Cyberpunk RED | Cyber HUB">
+<meta property="og:description" content="Правила, лор, карты, снаряжение и НПС для Cyberpunk RED.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cyberedhub.ru/materials.html">
+<meta property="og:image" content="https://cyberedhub.ru/favicon.ico">
+<meta property="og:locale" content="ru_RU">
+<link rel="canonical" href="https://cyberedhub.ru/materials.html">
+<link rel="icon" type="image/x-icon" href="favicon.ico?v=3">
 <link rel="stylesheet" href="style.css">
+<style>
+    .materials-toolbar {
+        background: linear-gradient(180deg, rgba(26,26,40,0.9), rgba(18,18,28,0.9));
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.2rem 1.4rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+    }
+    .materials-toolbar .search-input {
+        flex: 1;
+        min-width: 250px;
+        padding: 0.7rem 1rem;
+        background: var(--bg-3);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        font-family: inherit;
+        font-size: 0.95rem;
+        transition: border-color 0.2s;
+    }
+    .materials-toolbar .search-input:focus {
+        outline: none;
+        border-color: var(--neon-cyan);
+        box-shadow: 0 0 10px rgba(0,229,255,0.25);
+    }
+    .materials-toolbar .search-clear {
+        position: absolute;
+        right: 0.8rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        font-size: 1.2rem;
+        display: none;
+    }
+    .search-wrap {
+        position: relative;
+        flex: 1;
+        min-width: 250px;
+        display: flex;
+    }
+    .search-wrap .search-input { width: 100%; }
+    .search-wrap .search-clear.visible { display: block; }
+
+    .categories-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-bottom: 1rem;
+    }
+    .cat-btn {
+        padding: 0.5rem 1rem;
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        border-radius: 999px;
+        font-family: inherit;
+        font-size: 0.82rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .cat-btn:hover {
+        color: var(--neon-cyan);
+        border-color: var(--neon-cyan);
+    }
+    .cat-btn.active {
+        background: var(--neon-cyan);
+        color: var(--bg);
+        border-color: var(--neon-cyan);
+        font-weight: 700;
+    }
+
+    .premium-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+        padding: 0.15rem 0.55rem;
+        border: 1px solid var(--neon-yellow);
+        color: var(--neon-yellow);
+        border-radius: 999px;
+        text-transform: uppercase;
+        margin-left: 0.5rem;
+        font-weight: 700;
+        background: rgba(255, 214, 10, 0.08);
+    }
+    .card.locked {
+        opacity: 0.65;
+        position: relative;
+    }
+    .card.locked::after {
+        content: '🔒';
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 1.4rem;
+        opacity: 0.8;
+    }
+    .locked-overlay {
+        margin-top: 0.8rem;
+        padding: 0.8rem 1rem;
+        background: rgba(255, 214, 10, 0.08);
+        border: 1px dashed rgba(255, 214, 10, 0.4);
+        border-radius: 6px;
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--neon-yellow);
+    }
+    .locked-overlay a {
+        color: var(--neon-yellow);
+        text-decoration: underline;
+    }
+
+    .materials-empty {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-dim);
+    }
+    .materials-empty h3 { color: var(--text-dim); font-weight: 400; }
+
+    .premium-modal ul {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+    }
+    .premium-modal ul li {
+        padding: 0.4rem 0;
+        display: flex;
+        gap: 0.6rem;
+        align-items: flex-start;
+        color: var(--text);
+    }
+    .premium-modal ul li::before {
+        content: '✦';
+        color: var(--neon-yellow);
+        flex-shrink: 0;
+    }
+</style>
 </head>
 <body>
 
@@ -16,112 +173,283 @@
         </div>
     </div>
 
-    <div id="materials-list" class="grid cols-2 mt-2"></div>
-    <p id="materials-empty" class="text-dim hidden mt-2">Пока пусто. Администратор ещё не добавил материалы.</p>
+    <div class="materials-toolbar">
+        <div class="search-wrap">
+            <input type="search" class="search-input" id="search-input" placeholder="Поиск по названию или описанию…">
+            <button class="search-clear" id="search-clear" aria-label="Очистить">×</button>
+        </div>
+    </div>
+
+    <div class="categories-bar" id="categories-bar"></div>
+
+    <div id="materials-list" class="grid cols-2"></div>
+    <div id="materials-empty" class="materials-empty hidden">
+        <h3>Ничего не найдено</h3>
+        <p class="text-dim">Попробуйте изменить запрос или выбрать другую категорию.</p>
+    </div>
 </main>
 
 <script src="app.js"></script>
 <script>
-// ---------- Рендер материалов ----------
-async function renderMaterials() {
+const CATEGORIES = ['Все', 'Правила', 'Лор', 'Снаряжение', 'НПС', 'Ваншоты', 'Персонажи', 'Карты', 'Прочие'];
+
+let allMaterials = [];
+let currentCategory = 'Все';
+let currentSearch = '';
+let hasSubscription = false;
+
+async function initMaterialsPage() {
+    await loadSession();
+    renderHeader();
+
+    if (CURRENT_USER && CURRENT_USER.isAdmin) {
+        document.getElementById('add-material-wrap').classList.remove('hidden');
+        document.getElementById('open-add-material').addEventListener('click', openAddModal);
+    }
+
+    if (CURRENT_USER) {
+        try {
+            const sub = await api.get('/subscription/me');
+            hasSubscription = sub.active;
+        } catch (e) { hasSubscription = false; }
+    }
+
+    renderCategories();
+
+    let searchTimeout;
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        const val = e.target.value;
+        document.getElementById('search-clear').classList.toggle('visible', val.length > 0);
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            currentSearch = val.trim();
+            renderMaterials();
+        }, 250);
+    });
+    document.getElementById('search-clear').addEventListener('click', () => {
+        document.getElementById('search-input').value = '';
+        document.getElementById('search-clear').classList.remove('visible');
+        currentSearch = '';
+        renderMaterials();
+    });
+
+    await loadMaterials();
+}
+
+function renderCategories() {
+    const bar = document.getElementById('categories-bar');
+    bar.innerHTML = CATEGORIES.map(c => `
+        <button class="cat-btn ${c === currentCategory ? 'active' : ''}" data-cat="${c}">
+            ${c}
+        </button>
+    `).join('');
+    bar.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            currentCategory = btn.dataset.cat;
+            renderCategories();
+            renderMaterials();
+        });
+    });
+}
+
+async function loadMaterials() {
+    try {
+        allMaterials = await api.get('/materials');
+        renderMaterials();
+    } catch (err) {
+        document.getElementById('materials-list').innerHTML = '';
+        document.getElementById('materials-empty').classList.remove('hidden');
+        document.getElementById('materials-empty').innerHTML = `<h3>Ошибка</h3><p class="text-dim">${escapeHtml(err.message)}</p>`;
+    }
+}
+
+function renderMaterials() {
     const list = document.getElementById('materials-list');
     const empty = document.getElementById('materials-empty');
 
-    let items = [];
-    try {
-        items = await api.get('/materials');
-    } catch (err) {
-        list.innerHTML = '';
-        empty.textContent = 'Не удалось загрузить материалы: ' + err.message;
-        empty.classList.remove('hidden');
-        return;
+    let items = allMaterials;
+    if (currentCategory !== 'Все') {
+        items = items.filter(m => m.category === currentCategory);
+    }
+    if (currentSearch) {
+        const q = currentSearch.toLowerCase();
+        items = items.filter(m =>
+            m.title.toLowerCase().includes(q) ||
+            (m.description || '').toLowerCase().includes(q)
+        );
     }
 
     if (items.length === 0) {
         list.innerHTML = '';
-        empty.textContent = 'Пока пусто. Администратор ещё не добавил материалы.';
         empty.classList.remove('hidden');
         return;
     }
     empty.classList.add('hidden');
 
-    list.innerHTML = items.map(m => `
-        <div class="card accent-cyan" data-id="${m.id}">
-            <div class="flex-between">
-                <h3>${escapeHtml(m.title)}</h3>
-                <span class="tag">${escapeHtml(m.category || 'прочее')}</span>
-            </div>
-            <p style="white-space:pre-wrap; margin-top:.5rem">${escapeHtml(m.description)}</p>
-            ${m.fileUrl ? `
+    list.innerHTML = items.map(m => {
+        const premiumBadge = m.isPremium ? '<span class="premium-badge">✦ Подписка</span>' : '';
+        const lockedClass = m.locked ? 'locked' : '';
+
+        let fileBlock = '';
+        if (m.fileUrl) {
+            fileBlock = `
                 <div class="mt-1">
                     <a href="${m.fileUrl}" download class="btn" style="font-size:.8rem;padding:.5rem 1rem">
                         💾 Скачать файл
                     </a>
                     ${m.fileSize ? `<span class="text-dim" style="font-size:.8rem; margin-left:.5rem">${formatFileSize(m.fileSize)}</span>` : ''}
                 </div>
-            ` : ''}
-            <div class="mt-1 text-dim" style="font-size:.8rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem">
-                <span>Добавлено: ${escapeHtml(m.author)} · ${formatDate(m.createdAt)}</span>
-                <span>
-                    ${CURRENT_USER ? `<a href="#" class="fav-btn" data-id="${m.id}" style="text-decoration:none">${m.isFavorite ? '★ В избранном' : '☆ В избранное'}</a>` : ''}
-                    ${CURRENT_USER && CURRENT_USER.isAdmin ? ` · <a href="#" class="del-btn" data-id="${m.id}" style="color:var(--neon-pink);text-decoration:none">Удалить</a>` : ''}
-                </span>
-            </div>
-        </div>
-    `).join('');
+            `;
+        } else if (m.locked) {
+            fileBlock = `
+                <div class="locked-overlay">
+                    🔒 Материал доступен только подписчикам
+                    <br><a href="#" class="subscribe-link" style="margin-top:.5rem;display:inline-block">Оформить подписку →</a>
+                </div>
+            `;
+        }
 
-    document.querySelectorAll('.fav-btn').forEach(btn => {
+        return `
+            <div class="card accent-cyan ${lockedClass}" data-id="${m.id}">
+                <div class="flex-between">
+                    <h3>${escapeHtml(m.title)}${premiumBadge}</h3>
+                    <span class="tag">${escapeHtml(m.category)}</span>
+                </div>
+                <p style="white-space:pre-wrap; margin-top:.5rem">${escapeHtml(m.description)}</p>
+                ${fileBlock}
+                <div class="mt-1 text-dim" style="font-size:.8rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem">
+                    <span>Добавлено: ${escapeHtml(m.author)} · ${formatDate(m.createdAt)}</span>
+                    <span>
+                        ${CURRENT_USER ? `<a href="#" class="fav-btn" data-id="${m.id}" style="text-decoration:none">${m.isFavorite ? '★ В избранном' : '☆ В избранное'}</a>` : ''}
+                        ${CURRENT_USER && CURRENT_USER.isAdmin ? `
+                            · <a href="#" class="edit-btn" data-id="${m.id}" style="color:var(--neon-yellow);text-decoration:none">Редактировать</a>
+                            · <a href="#" class="del-btn" data-id="${m.id}" style="color:var(--neon-pink);text-decoration:none">Удалить</a>
+                        ` : ''}
+                    </span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    list.querySelectorAll('.fav-btn').forEach(btn => {
         btn.addEventListener('click', async e => {
             e.preventDefault();
             try {
                 await api.post(`/materials/${btn.dataset.id}/favorite`);
                 toast('Избранное обновлено', 'success');
-                renderMaterials();
-            } catch (err) {
-                toast(err.message, 'error');
-            }
+                await loadMaterials();
+            } catch (err) { toast(err.message, 'error'); }
         });
     });
 
-    document.querySelectorAll('.del-btn').forEach(btn => {
+    list.querySelectorAll('.del-btn').forEach(btn => {
         btn.addEventListener('click', async e => {
             e.preventDefault();
             if (!confirm('Удалить материал?')) return;
             try {
                 await api.delete(`/materials/${btn.dataset.id}`);
                 toast('Материал удалён', 'success');
-                renderMaterials();
-            } catch (err) {
-                toast(err.message, 'error');
+                await loadMaterials();
+            } catch (err) { toast(err.message, 'error'); }
+        });
+    });
+
+    list.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', async e => {
+            e.preventDefault();
+            const m = allMaterials.find(x => x.id === btn.dataset.id);
+            if (m) openEditModal(m);
+        });
+    });
+
+    list.querySelectorAll('.subscribe-link').forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            if (!CURRENT_USER) {
+                location.href = 'account.html';
+                return;
             }
+            openSubscribeModal();
         });
     });
 }
 
-// ---------- Модалка добавления (для админа) ----------
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' Б';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ';
+    return (bytes / 1024 / 1024).toFixed(2) + ' МБ';
+}
+
+// ============================================================
+//  МОДАЛКА ПОДПИСКИ — редирект на аккаунт для оплаты
+// ============================================================
+function openSubscribeModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal premium-modal">
+            <button class="modal-close">×</button>
+            <h2 style="color:var(--neon-yellow); text-shadow: var(--shadow-yellow)">✦ Cyber HUB+</h2>
+            <p class="text-dim">Подписка открывает доступ к премиум-материалам и продвинутым функциям.</p>
+            <ul>
+                <li>Премиум-материалы: готовые персонажи, ваншоты, NPC, эксклюзивный лор</li>
+                <li>Интерактивный лист персонажа с автозаполнением</li>
+                <li>7 особых рамок для аватара в чате и профиле</li>
+                <li>Скоро: игровые комнаты с картой и фигурками</li>
+                <li>Скоро: голосовой чат для онлайн-сессий</li>
+            </ul>
+
+            <div style="padding:1rem;border:1px solid rgba(255,214,10,0.3);border-radius:8px;margin:1rem 0;background:rgba(255,214,10,0.05)">
+                <div class="flex-between">
+                    <b style="color:var(--neon-yellow);font-size:1.1rem">Месяц</b>
+                    <b style="color:var(--neon-yellow);font-size:1.3rem">700 ₽</b>
+                </div>
+                <p class="text-dim" style="font-size:0.85rem;margin-top:0.3rem">Оплата через ЮKassa. Автопродление не подключено.</p>
+            </div>
+
+            <button class="btn yellow" id="go-to-subscribe" style="width:100%">
+                💳 Оформить подписку →
+            </button>
+            <p class="msg" style="margin-top:.5rem;text-align:center;font-size:0.8rem;color:var(--text-dim)">
+                Откроется страница аккаунта для оплаты
+            </p>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.querySelector('.modal-close').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('#go-to-subscribe').addEventListener('click', () => {
+        location.href = 'account.html';
+    });
+}
+
+// ============================================================
+//  МОДАЛКА ДОБАВЛЕНИЯ
+// ============================================================
 function openAddModal() {
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
         <div class="modal">
-            <button class="modal-close" aria-label="Закрыть">×</button>
+            <button class="modal-close">×</button>
             <h2>Новый материал</h2>
             <form class="form" id="material-form">
                 <label>Название</label>
                 <input type="text" id="m-title" required maxlength="120">
                 <label>Категория</label>
                 <select id="m-category">
-                    <option>правила</option>
-                    <option>хоумбрю</option>
-                    <option>снаряжение</option>
-                    <option>NPC</option>
-                    <option>карты</option>
-                    <option>лор</option>
-                    <option>прочее</option>
+                    ${CATEGORIES.filter(c => c !== 'Все').map(c => `<option>${c}</option>`).join('')}
                 </select>
                 <label>Описание</label>
                 <textarea id="m-desc" required></textarea>
-                <label>Файл (необязательно, до 10 МБ)</label>
+                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;margin-top:.5rem">
+                    <input type="checkbox" id="m-premium" style="width:auto">
+                    <span>Только для подписчиков (премиум)</span>
+                </label>
+                <label>Файл (до 100 МБ)</label>
                 <input type="file" id="m-file">
                 <button type="submit" class="btn pink mt-1">Опубликовать</button>
                 <p class="msg error" id="m-msg"></p>
@@ -136,39 +464,80 @@ function openAddModal() {
 
     overlay.querySelector('#material-form').addEventListener('submit', async e => {
         e.preventDefault();
-        const title = document.getElementById('m-title').value.trim();
-        const category = document.getElementById('m-category').value;
-        const description = document.getElementById('m-desc').value.trim();
-        const fileInput = document.getElementById('m-file');
-        const msg = document.getElementById('m-msg');
-
         const fd = new FormData();
-        fd.append('title', title);
-        fd.append('category', category);
-        fd.append('description', description);
-        if (fileInput.files[0]) fd.append('file', fileInput.files[0]);
+        fd.append('title', document.getElementById('m-title').value.trim());
+        fd.append('category', document.getElementById('m-category').value);
+        fd.append('description', document.getElementById('m-desc').value.trim());
+        fd.append('isPremium', document.getElementById('m-premium').checked ? 'true' : 'false');
+        const file = document.getElementById('m-file').files[0];
+        if (file) fd.append('file', file);
 
+        const msg = document.getElementById('m-msg');
         try {
             await api.post('/materials', fd);
             close();
             toast('Материал опубликован', 'success');
-            renderMaterials();
-        } catch (err) {
-            msg.textContent = err.message || 'Не удалось загрузить';
-        }
+            await loadMaterials();
+        } catch (err) { msg.textContent = err.message; }
     });
 }
 
-// ---------- Init ----------
-async function initMaterialsPage() {
-    await loadSession();
-    renderHeader();
+// ============================================================
+//  МОДАЛКА РЕДАКТИРОВАНИЯ
+// ============================================================
+function openEditModal(material) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal">
+            <button class="modal-close">×</button>
+            <h2>Редактировать материал</h2>
+            <form class="form" id="edit-material-form">
+                <label>Название</label>
+                <input type="text" id="e-title" value="${escapeHtml(material.title)}" required maxlength="120">
+                <label>Категория</label>
+                <select id="e-category">
+                    ${CATEGORIES.filter(c => c !== 'Все').map(c =>
+                        `<option ${material.category === c ? 'selected' : ''}>${c}</option>`
+                    ).join('')}
+                </select>
+                <label>Описание</label>
+                <textarea id="e-desc" required>${escapeHtml(material.description)}</textarea>
+                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;margin-top:.5rem">
+                    <input type="checkbox" id="e-premium" style="width:auto" ${material.isPremium ? 'checked' : ''}>
+                    <span>Только для подписчиков</span>
+                </label>
+                <label>Новый файл (оставь пустым — не менять)</label>
+                <input type="file" id="e-file">
+                <button type="submit" class="btn pink mt-1">Сохранить</button>
+                <p class="msg error" id="e-msg"></p>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
 
-    if (CURRENT_USER && CURRENT_USER.isAdmin) {
-        document.getElementById('add-material-wrap').classList.remove('hidden');
-        document.getElementById('open-add-material').addEventListener('click', openAddModal);
-    }
-    renderMaterials();
+    const close = () => overlay.remove();
+    overlay.querySelector('.modal-close').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('#edit-material-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const fd = new FormData();
+        fd.append('title', document.getElementById('e-title').value.trim());
+        fd.append('category', document.getElementById('e-category').value);
+        fd.append('description', document.getElementById('e-desc').value.trim());
+        fd.append('isPremium', document.getElementById('e-premium').checked ? 'true' : 'false');
+        const file = document.getElementById('e-file').files[0];
+        if (file) fd.append('file', file);
+
+        const msg = document.getElementById('e-msg');
+        try {
+            await api.put(`/materials/${material.id}`, fd);
+            close();
+            toast('Материал обновлён', 'success');
+            await loadMaterials();
+        } catch (err) { msg.textContent = err.message; }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', initMaterialsPage);

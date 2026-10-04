@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Чат — Cyber HUB</title>
+<meta name="description" content="Чат для игроков в Cyberpunk RED. Обсуждай правила, ищи группу, делись идеями. Группы: Флудилка, Вопросы по механикам.">
+<meta name="keywords" content="чат Cyberpunk RED, сообщество НРИ, обсуждение киберпанк, найти группу, настольные игры чат">
+<meta property="og:title" content="Чат Cyberpunk RED | Cyber HUB">
+<meta property="og:description" content="Общение игроков в Cyberpunk RED.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cyberedhub.ru/chat.html">
+<meta property="og:image" content="https://cyberedhub.ru/favicon.ico">
+<meta property="og:locale" content="ru_RU">
+<link rel="canonical" href="https://cyberedhub.ru/chat.html">
+<link rel="icon" type="image/x-icon" href="favicon.ico?v=3">
+<link rel="stylesheet" href="style.css">
+<style>
+    .chat-layout {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 1rem;
+        max-width: 1100px;
+        margin: 2rem auto;
+        min-height: 600px;
+    }
+    @media (max-width: 720px) {
+        .chat-layout { grid-template-columns: 1fr; }
+    }
+    .chat-sidebar {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1rem;
+        height: fit-content;
+    }
+    .chat-sidebar h3 {
+        font-size: 0.85rem;
+        color: var(--neon-cyan);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.6rem;
+    }
+    .group-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.55rem 0.8rem;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-bottom: 0.3rem;
+        color: var(--text);
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    .group-item:hover { background: rgba(0, 229, 255, 0.08); }
+    .group-item.active {
+        background: rgba(0, 229, 255, 0.15);
+        color: var(--neon-cyan);
+        border-left: 3px solid var(--neon-cyan);
+    }
+    .group-count {
+        font-size: 0.7rem;
+        background: rgba(0, 229, 255, 0.2);
+        padding: 0.1rem 0.4rem;
+        border-radius: 999px;
+        color: var(--neon-cyan);
+    }
+    .group-delete {
+        color: var(--neon-pink);
+        font-size: 0.9rem;
+        padding: 0 0.3rem;
+        opacity: 0.6;
+        cursor: pointer;
+    }
+    .group-delete:hover { opacity: 1; }
+    .chat-main {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        max-height: 70vh;
+    }
+    .chat-header {
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .chat-header h3 { margin: 0; color: var(--neon-cyan); font-size: 1rem; }
+    .online-pill {
+        font-size: 0.8rem; color: var(--neon-green);
+        display: flex; align-items: center; gap: 0.4rem;
+    }
+    .online-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--neon-green);
+        box-shadow: 0 0 8px var(--neon-green);
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 50% { opacity: 0.4; } }
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+    }
+    .chat-msg {
+        display: flex; gap: 0.8rem;
+        margin-bottom: 0.9rem;
+        padding: 0.55rem;
+        border-radius: 6px;
+        position: relative;
+        background: rgba(0, 229, 255, 0.04);
+    }
+    .unread-badge {
+        background: #ff2d95;
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.15rem 0.45rem;
+        border-radius: 999px;
+        min-width: 20px;
+        text-align: center;
+        box-shadow: 0 0 8px rgba(255, 45, 149, 0.7);
+        animation: unreadPulse 2s infinite;
+    }
+    @keyframes unreadPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    .chat-msg.own { background: rgba(255, 45, 149, 0.06); }
+    .chat-msg:hover .msg-delete { opacity: 1; }
+    .msg-delete {
+        opacity: 0;
+        position: absolute;
+        top: 0.3rem; right: 0.4rem;
+        color: var(--neon-pink);
+        cursor: pointer;
+        font-size: 0.85rem;
+    }
+    .chat-avatar {
+        width: 38px; height: 38px;
+        border-radius: 50%; object-fit: cover;
+        border: 2px solid var(--neon-cyan);
+        flex-shrink: 0;
+    }
+    .chat-avatar-ph {
+        width: 38px; height: 38px;
+        border-radius: 50%;
+        background: var(--bg-3);
+        display: flex; align-items: center; justify-content: center;
+        border: 2px solid var(--neon-cyan);
+        font-weight: bold; color: var(--neon-cyan);
+        flex-shrink: 0;
+    }
+    .chat-body { flex: 1; min-width: 0; }
+    .chat-meta { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); }
+    .chat-name { color: var(--neon-cyan); font-weight: 600; }
+    .chat-text { word-break: break-word; margin-top: 0.15rem; }
+    .chat-form { display: flex; gap: 0.5rem; padding: 0.8rem; border-top: 1px solid var(--border); }
+    .chat-form input { flex: 1; }
+    .no-group-msg { padding: 2rem; text-align: center; color: var(--text-dim); }
+    .emoji-toggle {
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 1.3rem;
+        cursor: pointer;
+        padding: 0.4rem 0.7rem;
+        transition: all 0.2s;
+        line-height: 1;
+    }
+    .emoji-toggle:hover {
+        border-color: var(--neon-cyan);
+        background: rgba(0, 229, 255, 0.1);
+    }
+    .emoji-picker {
+        position: absolute;
+        bottom: 100%;
+        left: 0;
+        right: 0;
+        max-width: 380px;
+        background: var(--bg-2);
+        border: 1px solid var(--neon-cyan);
+        border-radius: 8px;
+        padding: 0.7rem;
+        margin-bottom: 0.5rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+        z-index: 10;
+    }
+    .emoji-picker.hidden {
+        display: none !important;
+    }
+    .emoji-grid {
+        display: grid !important;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 0.3rem;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .emoji-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.4rem;
+        cursor: pointer;
+        padding: 0.3rem;
+        border-radius: 4px;
+        line-height: 1;
+        transition: background 0.15s;
+    }
+    .emoji-btn:hover {
+        background: rgba(0, 229, 255, 0.15);
+    }
+    .chat-form {
+        position: relative;
+        display: flex;
+        gap: 0.4rem;
+        align-items: center;
+    }
+</style>
+</head>
+<body>
+
+<main>
+    <h1 class="page-title">Чат<small>Общение сообщества // Live</small></h1>
+
+    <div id="chat-login-required" class="card accent-pink hidden" style="max-width:520px;margin:2rem auto">
+        <p>Чтобы войти в чат, <a href="account.html">авторизуйтесь</a>.</p>
+    </div>
+
+    <div id="chat-layout" class="chat-layout hidden">
+        <aside class="chat-sidebar">
+            <h3>Группы</h3>
+            <div id="groups-list"></div>
+            <div id="admin-group-form" class="hidden" style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem">
+                <h3 style="color:var(--neon-pink)">+ Новая группа</h3>
+                <input type="text" id="new-group-name" placeholder="Название" style="width:100%;margin-bottom:0.4rem">
+                <button class="btn pink" style="font-size:0.75rem;padding:0.4rem 0.8rem" id="create-group-btn">Создать</button>
+            </div>
+        </aside>
+
+        <section class="chat-main">
+            <header class="chat-header">
+                <h3 id="current-group-name">Выберите группу</h3>
+                <div class="online-pill"><span class="online-dot"></span> <span id="online-count">0</span> онлайн</div>
+            </header>
+            <div class="chat-messages" id="chat-messages">
+                <p class="no-group-msg">Выберите группу слева, чтобы начать общение</p>
+            </div>
+            <form class="chat-form" id="chat-form">
+                <button type="button" class="emoji-toggle" id="emoji-toggle" title="Смайлики">😀</button>
+                <input type="text" id="chat-input" placeholder="Написать сообщение…" maxlength="1000" autocomplete="off" required disabled>
+                <div class="emoji-picker hidden" id="emoji-picker">
+                    <div class="emoji-grid">
+                        <button type="button" class="emoji-btn">😀</button>
+                        <button type="button" class="emoji-btn">😄</button>
+                        <button type="button" class="emoji-btn">😂</button>
+                        <button type="button" class="emoji-btn">🤣</button>
+                        <button type="button" class="emoji-btn">😊</button>
+                        <button type="button" class="emoji-btn">😎</button>
+                        <button type="button" class="emoji-btn">🤔</button>
+                        <button type="button" class="emoji-btn">🙃</button>
+                        <button type="button" class="emoji-btn">😴</button>
+                        <button type="button" class="emoji-btn">😡</button>
+                        <button type="button" class="emoji-btn">🤬</button>
+                        <button type="button" class="emoji-btn">🥺</button>
+                        <button type="button" class="emoji-btn">😢</button>
+                        <button type="button" class="emoji-btn">😭</button>
+                        <button type="button" class="emoji-btn">😱</button>
+                        <button type="button" class="emoji-btn">🤯</button>
+                        <button type="button" class="emoji-btn">🤠</button>
+                        <button type="button" class="emoji-btn">😈</button>
+                        <button type="button" class="emoji-btn">💀</button>
+                        <button type="button" class="emoji-btn">☠️</button>
+                        <button type="button" class="emoji-btn">👽</button>
+                        <button type="button" class="emoji-btn">🤖</button>
+                        <button type="button" class="emoji-btn">🔥</button>
+                        <button type="button" class="emoji-btn">💯</button>
+                        <button type="button" class="emoji-btn">✨</button>
+                        <button type="button" class="emoji-btn">⚡</button>
+                        <button type="button" class="emoji-btn">💥</button>
+                        <button type="button" class="emoji-btn">💬</button>
+                        <button type="button" class="emoji-btn">🤘</button>
+                        <button type="button" class="emoji-btn">👍</button>
+                        <button type="button" class="emoji-btn">👎</button>
+                        <button type="button" class="emoji-btn">👌</button>
+                        <button type="button" class="emoji-btn">✌️</button>
+                        <button type="button" class="emoji-btn">🖖</button>
+                    </div>
+                </div>
+                <button type="submit" class="btn" id="send-btn" disabled>Отправить</button>
+            </form>
+        </section>
+    </div>
+</main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+<script>
+let socket = null;
+let currentGroupId = null;
+let groups = [];
+let onlineCounts = {};
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadSession();
+    renderHeader();
+
+    if (!CURRENT_USER) {
+        document.getElementById('chat-login-required').classList.remove('hidden');
+        return;
+    }
+
+    document.getElementById('chat-layout').classList.remove('hidden');
+
+    socket = io({ withCredentials: true });
+
+    // Загружаем группы
+    try {
+        groups = await api.get('/chat/groups');
+        await loadUnread(); 
+        renderGroups();
+    } catch (err) {
+        console.error('Groups load error:', err);
+    }
+
+    setInterval(async () => {
+        await loadUnread();
+        renderGroups();
+    }, 30000);
+
+    // Кнопка создания группы (для админа)
+    if (CURRENT_USER.isAdmin) {
+        document.getElementById('admin-group-form').classList.remove('hidden');
+        document.getElementById('create-group-btn').addEventListener('click', createGroup);
+    }
+
+    // Обработчики сокета
+    socket.on('history', (messages) => {
+        const el = document.getElementById('chat-messages');
+        el.innerHTML = '';
+        if (messages.length === 0) {
+            el.innerHTML = '<p class="no-group-msg">Сообщений пока нет. Будьте первым!</p>';
+        } else {
+            messages.forEach(renderMessage);
+            el.scrollTop = el.scrollHeight;
+        }
+    });
+
+    socket.on('message', (msg) => {
+        if (msg.groupId === currentGroupId) {
+            const el = document.getElementById('chat-messages');
+            const placeholder = el.querySelector('.no-group-msg');
+            if (placeholder) placeholder.remove();
+            el.insertAdjacentHTML('beforeend', messageHtml(msg));
+            el.scrollTop = el.scrollHeight;
+            attachDeleteHandlers();
+
+            // Отмечаем прочитанным, потому что мы в этой группе
+            api.post(`/chat/read/${currentGroupId}`).catch(() => {});
+        } else {
+            // Сообщение в другую группу — увеличиваем счётчик
+            if (msg.userId !== CURRENT_USER.id) {
+                unreadCounts[msg.groupId] = (unreadCounts[msg.groupId] || 0) + 1;
+                renderGroups();
+            }
+        }
+    });
+
+    socket.on('message_deleted', ({ messageId }) => {
+        const el = document.querySelector(`.chat-msg[data-id="${messageId}"]`);
+        if (el) el.remove();
+    });
+
+    socket.on('online_users', (users) => {
+        if (currentGroupId && users.length >= 0) {
+            document.getElementById('online-count').textContent = users.length;
+        }
+    });
+
+    socket.on('online_counts', (counts) => {
+        onlineCounts = counts;
+        updateGroupCounts();
+    });
+
+    // Отправка
+    document.getElementById('chat-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text || !currentGroupId) return;
+        socket.emit('message', { groupId: currentGroupId, text });
+        input.value = '';
+    });
+    // При закрытии/уходе со страницы — отключаемся от группы
+    window.addEventListener('beforeunload', () => {
+        if (socket && currentGroupId) {
+            // Сервер сам отключит нас через socket.on('disconnect')
+            socket.disconnect();
+        }
+    });
+    const emojiToggle = document.getElementById('emoji-toggle');
+    const emojiPicker = document.getElementById('emoji-picker');
+    const chatInput = document.getElementById('chat-input');
+
+    emojiToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        emojiPicker.classList.toggle('hidden');
+    });
+
+    emojiPicker.querySelectorAll('.emoji-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            chatInput.value += btn.textContent;
+            chatInput.focus();
+        });
+    });
+
+    // Закрываем при клике вне
+    document.addEventListener('click', (e) => {
+        if (!emojiPicker.contains(e.target) && !emojiToggle.contains(e.target)) {
+            emojiPicker.classList.add('hidden');
+        }
+    });
+});
+
+let unreadCounts = {};  // { groupId: count }
+
+async function loadUnread() {
+    try {
+        unreadCounts = await api.get('/chat/unread');
+    } catch (err) {
+        console.error('Unread load error:', err);
+    }
+}
+
+function renderGroups() {
+    const wrap = document.getElementById('groups-list');
+    wrap.innerHTML = groups.map(g => {
+        const unread = unreadCounts[g.id] || 0;
+        const unreadBadge = unread > 0
+            ? `<span class="unread-badge">${unread > 99 ? '99+' : unread}</span>`
+            : '';
+        return `
+            <div class="group-item ${g.id === currentGroupId ? 'active' : ''}" data-id="${g.id}">
+                <span>${escapeHtml(g.name)}</span>
+                <span style="display:flex;align-items:center;gap:0.4rem">
+                    ${unreadBadge}
+                    <span class="group-count" data-count-for="${g.id}">${onlineCounts[g.id] || 0}</span>
+                    ${CURRENT_USER.isAdmin ? `<span class="group-delete" data-delete="${g.id}" title="Удалить группу">×</span>` : ''}
+                </span>
+            </div>
+        `;
+    }).join('');
+
+    wrap.querySelectorAll('.group-item').forEach(el => {
+        el.addEventListener('click', (e) => {
+            if (e.target.classList.contains('group-delete')) return;
+            joinGroup(el.dataset.id);
+        });
+    });
+
+    wrap.querySelectorAll('.group-delete').forEach(el => {
+        el.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (!confirm('Удалить группу и все её сообщения?')) return;
+            try {
+                await api.delete(`/chat/groups/${el.dataset.delete}`);
+                groups = groups.filter(g => g.id !== el.dataset.delete);
+                if (currentGroupId === el.dataset.delete) {
+                    currentGroupId = null;
+                    document.getElementById('chat-messages').innerHTML = '<p class="no-group-msg">Выберите группу</p>';
+                    document.getElementById('chat-input').disabled = true;
+                    document.getElementById('send-btn').disabled = true;
+                    if (groups.length > 0) joinGroup(groups[0].id);
+                }
+                renderGroups();
+                toast('Группа удалена', 'success');
+            } catch (err) { toast(err.message, 'error'); }
+        });
+    });
+}
+function updateGroupCounts() {
+    document.querySelectorAll('[data-count-for]').forEach(el => {
+        const id = el.dataset.countFor;
+        el.textContent = onlineCounts[id] || 0;
+    });
+}
+
+function joinGroup(groupId) {
+    currentGroupId = groupId;
+    const group = groups.find(g => g.id === groupId);
+    document.getElementById('current-group-name').textContent = group ? group.name : 'Чат';
+    document.getElementById('chat-input').disabled = false;
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('chat-messages').innerHTML = '<p class="no-group-msg">Загрузка…</p>';
+
+    // Сбрасываем счётчик непрочитанных для этой группы
+    unreadCounts[groupId] = 0;
+    renderGroups();
+
+    socket.emit('join_group', { userId: CURRENT_USER.id, groupId });
+
+    // Отмечаем прочитанным на сервере
+    api.post(`/chat/read/${groupId}`).catch(console.error);
+
+    document.getElementById('chat-input').focus();
+}
+
+function renderMessage(msg) {
+    const el = document.getElementById('chat-messages');
+    if (el.querySelector('.no-group-msg')) el.innerHTML = '';
+    el.insertAdjacentHTML('beforeend', messageHtml(msg));
+    attachDeleteHandlers();
+}
+
+function messageHtml(msg) {
+    const isOwn = msg.userId === CURRENT_USER.id;
+    const name = msg.displayName || msg.username;
+
+    // Аватар
+    const avatarInner = msg.avatar
+        ? `<img src="${escapeHtml(msg.avatar)}" style="width:36px;height:36px;object-fit:cover;display:block">`
+        : `<div style="width:36px;height:36px;background:var(--bg-3);display:flex;align-items:center;justify-content:center;font-weight:bold;color:var(--neon-cyan);font-size:0.9rem">${escapeHtml(name[0].toUpperCase())}</div>`;
+
+    // Обёртка — премиум или обычная
+    const frame = msg.avatarFrame || 'neon';
+    const avatarWrapped = msg.hasSubscription
+        ? `<div class="chat-avatar-premium frame-${frame}">${avatarInner}</div>`
+        : `<div class="chat-avatar-simple">${avatarInner}</div>`;
+
+    const time = new Date(msg.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const delBtn = CURRENT_USER.isAdmin ? `<span class="msg-delete" data-msg-id="${msg.id}" title="Удалить">×</span>` : '';
+    const premiumStar = msg.hasSubscription ? '<span class="premium-star">✦</span>' : '';
+
+    return `
+        <div class="chat-msg ${isOwn ? 'own' : ''}" data-id="${msg.id}">
+            ${avatarWrapped}
+            <div class="chat-body">
+                <div class="chat-meta"><span class="chat-name">${escapeHtml(name)}${premiumStar}</span><span>${time}</span></div>
+                <div class="chat-text">${escapeHtml(msg.text)}</div>
+            </div>
+            ${delBtn}
+        </div>
+    `;
+}
+function attachDeleteHandlers() {
+    document.querySelectorAll('.msg-delete').forEach(el => {
+        if (el._bound) return;
+        el._bound = true;
+        el.addEventListener('click', () => {
+            if (!confirm('Удалить сообщение?')) return;
+            socket.emit('delete_message', { messageId: el.dataset.msgId });
+        });
+    });
+}
+
+async function createGroup() {
+    const name = document.getElementById('new-group-name').value.trim();
+    if (!name) return toast('Введи название группы', 'error');
+    const slug = 'g_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    try {
+        const g = await api.post('/chat/groups', { name, slug });
+        groups.push(g);
+        document.getElementById('new-group-name').value = '';
+        renderGroups();
+        toast('Группа создана', 'success');
+    } catch (err) { toast(err.message, 'error'); }
+}
+</script>
+</body>
+</html>

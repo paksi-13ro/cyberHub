@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /uploads/avatars/
+
+Sitemap: https://cyberedhub.ru/sitemap.xml
+Host: https://cyberedhub.ru

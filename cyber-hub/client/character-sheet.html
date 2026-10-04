@@ -1,0 +1,2865 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Лист персонажа — Cyberpunk RED</title>
+<meta name="description" content="Интерактивный лист персонажа Cyberpunk RED. Автоподсчёт навыков, характеристики, оружие, броня, кибермиланты, печать и сохранение.">
+<meta name="keywords" content="лист персонажа Cyberpunk RED, чарник, редактор персонажа, интерактивный лист">
+<meta name="robots" content="noindex, follow">
+<style>
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        padding: 1rem;
+        background: #1a1a1f;
+        color: #e0e0e0;
+        font-family: Arial, sans-serif;
+    }
+    .header { text-align: center; margin-bottom: 1rem; }
+    .header h1 { color: #ff2d20; margin: 0 0 0.3rem; font-size: 1.5rem; }
+    .header p { color: #888; font-size: 0.85rem; margin: 0; }
+
+    .controls {
+        position: fixed; top: 1rem; right: 1rem;
+        background: #12121c; padding: 0.6rem 0.8rem;
+        border-radius: 6px; border: 1px solid #333;
+        font-size: 0.8rem; z-index: 100;
+        display: flex; flex-direction: column; gap: 0.3rem;
+    }
+    .controls button {
+        background: #ff2d20; color: #fff; border: none;
+        padding: 0.4rem 0.7rem; cursor: pointer;
+        border-radius: 4px; font-size: 0.75rem;
+    }
+    .controls button.secondary { background: #333; }
+
+    .sheet-wrapper { max-width: 1200px; margin: 0 auto; }
+    .sheet-page {
+        position: relative;
+        width: 100%;
+        margin-bottom: 2rem;
+        background: #fff;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .sheet-page svg { display: block; width: 100%; height: auto; }
+
+    /* ============ ПОЛЯ ВВОДА ============ */
+    .sheet-field {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: transparent;
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+        color: #000;
+        padding: 0 3px;
+        outline: none;
+        box-sizing: border-box;
+        line-height: 1;
+    }
+    .sheet-field:focus {
+        background: rgba(180, 220, 255, 0.15);
+        outline: none;
+    }
+    .sheet-field::placeholder {
+        color: rgba(0, 0, 0, 0.2);
+        font-style: italic;
+    }
+    /* Убираем спиннеры number-полей */
+    .sheet-field[type="number"]::-webkit-outer-spin-button,
+    .sheet-field[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    .sheet-field[type="number"] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+    .sheet-field::-ms-clear,
+    .sheet-field::-ms-reveal { display: none; }
+    .sheet-field::-webkit-search-cancel-button { display: none; }
+
+    /* ============ READONLY (STAT / СУМ) ============ */
+    .sheet-readonly {
+        width: 100%;
+        height: 100%;
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+        color: #000;
+        text-align: center;
+        line-height: 1.4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 3px;
+        background: transparent;
+        font-weight: 500;
+    }
+
+    /* ============ ЧЕКБОКСЫ (КИБЕРМИЛАНТЫ) ============ */
+    .sheet-checkbox {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        height: 100%;
+        border: 1.5px solid rgba(0, 0, 0, 0.3);
+        background: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        margin: 0;
+        display: block;
+        position: relative;
+        box-sizing: border-box;
+    }
+    .sheet-checkbox:hover {
+        background: rgba(255, 45, 32, 0.15);
+        border-color: rgba(255, 45, 32, 0.6);
+    }
+    .sheet-checkbox:checked {
+        background: rgba(255, 45, 32, 0.85);
+        border-color: #ff2d20;
+    }
+    .sheet-checkbox:checked::after {
+        content: '✓';
+        color: #fff;
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: bold;
+        line-height: 1;
+    }
+
+    /* ============ РЕЖИМ ОТЛАДКИ ============ */
+    body.debug .sheet-field {
+        background: rgba(255, 255, 200, 0.35);
+        border: 1px solid rgba(255, 100, 0, 0.5);
+    }
+    body.debug .sheet-readonly {
+        background: rgba(200, 255, 200, 0.4);
+        border: 1px solid rgba(0, 180, 0, 0.5);
+    }
+    body.debug .sheet-checkbox {
+        background: rgba(200, 200, 255, 0.4);
+        border: 1.5px solid rgba(0, 0, 255, 0.5);
+    }
+
+    .sheet-field[data-multiline] {
+        resize: none;
+        padding: 3px 5px;
+        line-height: 1.3;
+    }
+    /* ============================================================
+       ВЕРХНЯЯ ПАНЕЛЬ (шапка редактора)
+       ============================================================ */
+    .sheet-toolbar {
+        position: sticky;
+        top: 70px;
+        z-index: 50;
+        background: rgba(18, 18, 28, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.8rem 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.8rem;
+        flex-wrap: wrap;
+    }
+    .sheet-toolbar-name {
+        color: var(--neon-cyan);
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.1rem;
+        letter-spacing: 2px;
+        flex: 1;
+    }
+    .sheet-toolbar-name input {
+        background: transparent;
+        border: none;
+        color: var(--neon-cyan);
+        font-family: inherit;
+        font-size: inherit;
+        letter-spacing: inherit;
+        padding: 0.2rem 0.4rem;
+        border-bottom: 1px dashed rgba(0, 229, 255, 0.3);
+        outline: none;
+        width: 100%;
+        max-width: 400px;
+    }
+    .sheet-toolbar-name input:focus {
+        border-bottom-color: var(--neon-cyan);
+        background: rgba(0, 229, 255, 0.05);
+    }
+    .sheet-toolbar-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .sheet-btn-mini {
+        padding: 0.5rem 1rem;
+        background: transparent;
+        color: var(--neon-cyan);
+        border: 1px solid var(--neon-cyan);
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: 0.78rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .sheet-btn-mini:hover {
+        background: var(--neon-cyan);
+        color: var(--bg);
+    }
+    .sheet-btn-mini.pink {
+        color: var(--neon-pink);
+        border-color: var(--neon-pink);
+    }
+    .sheet-btn-mini.pink:hover {
+        background: var(--neon-pink);
+        color: var(--bg);
+    }
+    .sheet-btn-mini.yellow {
+        color: var(--neon-yellow);
+        border-color: var(--neon-yellow);
+    }
+    .sheet-btn-mini.yellow:hover {
+        background: var(--neon-yellow);
+        color: var(--bg);
+    }
+    .sheet-btn-mini:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+    .sheet-save-status {
+        font-size: 0.78rem;
+        color: var(--text-dim);
+        letter-spacing: 1px;
+    }
+    .sheet-save-status.saving { color: var(--neon-yellow); }
+    .sheet-save-status.saved { color: var(--neon-green); }
+    .sheet-save-status.error { color: var(--neon-pink); }
+
+    /* ============================================================
+       АВАТАР ПЕРСОНАЖА
+       ============================================================ */
+    .avatar-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.05);
+    }
+    .avatar-container img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .avatar-container .avatar-placeholder {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 3em;
+        color: rgba(0, 0, 0, 0.15);
+        font-family: Arial, sans-serif;
+    }
+    .avatar-container .avatar-hint {
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 45, 149, 0.85);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9em;
+        font-weight: 600;
+        text-align: center;
+        padding: 5px;
+        opacity: 0;
+        transition: opacity 0.2s;
+        pointer-events: none;
+    }
+    .avatar-container:hover .avatar-hint { opacity: 1; }
+    .avatar-container input[type=file] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+ 
+    /* ============================================================
+       СТИЛИ ПЕЧАТИ
+       ============================================================ */
+        @media print {
+        /* Размер печатной страницы — альбомная A4 */
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        html, body {
+            background: #fff !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            color: #000 !important;
+            width: 297mm;
+            height: 210mm;
+        }
+
+        /* Прячем всё лишнее */
+        header.site-header,
+        footer.site-footer,
+        .sheet-toolbar,
+        .controls,
+        .header,
+        #toast-container,
+        .sheet-actions {
+            display: none !important;
+        }
+
+        main {
+            padding: 0 !important;
+            max-width: none !important;
+        }
+
+        .sheet-wrapper {
+            max-width: none !important;
+            margin: 0 !important;
+        }
+
+        /* Каждый лист — ровно одна печатная страница */
+        .sheet-page {
+            width: 297mm !important;
+            height: 210mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            page-break-after: always;
+            page-break-inside: avoid;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Последняя страница — без разрыва */
+        .sheet-page:last-child {
+            page-break-after: auto;
+        }
+
+        /* SVG растягиваем ровно на страницу */
+        .sheet-page svg {
+            display: block;
+            width: 297mm !important;
+            height: 210mm !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+        }
+
+        /* Поля ввода становятся прозрачным текстом */
+        .sheet-field {
+            background: transparent !important;
+            border: none !important;
+            color: #000 !important;
+            padding: 0 3px !important;
+        }
+        .sheet-field:focus {
+            background: transparent !important;
+        }
+        .sheet-field::placeholder {
+            color: transparent !important;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        .sheet-readonly { color: #000 !important; }
+        .sheet-checkbox { background: transparent !important; }
+
+        /* Убираем подсветку отладки */
+        body.debug .sheet-field,
+        body.debug .sheet-readonly,
+        body.debug .sheet-checkbox {
+            background: transparent !important;
+            border: none !important;
+        }
+    }
+</style>
+</head>
+<body>
+
+<!-- ============ ТУЛБАР РЕДАКТОРА ============ -->
+<div class="sheet-toolbar">
+    <div class="sheet-toolbar-name">
+        <input type="text" id="sheet-name-display" placeholder="Имя персонажа…" maxlength="80">
+    </div>
+    <div class="sheet-toolbar-actions">
+        <span class="sheet-save-status" id="save-status"></span>
+        <button class="sheet-btn-mini" id="btn-save">💾 Сохранить</button>
+        <button class="sheet-btn-mini yellow" id="btn-print">🖨️ Печать</button>
+        <button class="sheet-btn-mini pink" id="btn-delete">🗑 Удалить</button>
+        <button class="sheet-btn-mini" id="btn-back">← К списку</button>
+        <button class="sheet-btn-mini" id="btn-debug" title="Показать/скрыть поля для отладки">Отладка</button>
+    </div>
+</div>
+
+<div class="sheet-wrapper">
+
+    <!-- ============ СТРАНИЦА 1 ============ -->
+    <div class="sheet-page">
+        <svg viewBox="0 0 1400 1000" xmlns="http://www.w3.org/2000/svg">
+            <image href="img/page-1.jpg" x="0" y="0" width="1400" height="1000"/>
+
+            <!-- Аватар персонажа  -->
+            <foreignObject x="155" y="90" width="219" height="206">
+                <div xmlns="http://www.w3.org/1999/xhtml" class="avatar-container" id="avatar-container">
+                    <div class="avatar-placeholder" id="avatar-placeholder">?</div>
+                    <img id="avatar-img" style="display:none" alt="">
+                    <div class="avatar-hint">Нажми, чтобы загрузить фото</div>
+                    <input type="file" id="avatar-file" accept="image/*">
+                </div>
+            </foreignObject>
+
+            <!-- Имя -->
+            <foreignObject x="194" y="305" width="183" height="35">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="char-name" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Роль -->
+            <foreignObject x="197" y="346" width="180" height="35">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="char-role" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Ранг роли -->
+            <foreignObject x="335" y="387" width="42" height="37">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="char-rank" placeholder="" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- Заметки -->
+            <foreignObject x="157" y="444" width="220" height="204">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="char-notes" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- ==== ХАРАКТЕРИСТИКИ ==== -->
+            <!-- ИНТ -->
+            <foreignObject x="398" y="104" width="56" height="42">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="int" min="1" max="10" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- РЕА -->
+            <foreignObject x="398" y="168" width="56" height="42">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="rea" min="1" max="10" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- ЛОВ -->
+            <foreignObject x="398" y="233" width="56" height="42">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="lov" min="1" max="10" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- ТЕХ -->
+            <foreignObject x="398" y="297" width="56" height="42">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="teh" min="1" max="10" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- ХАР -->
+            <foreignObject x="399" y="362" width="56" height="42">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="har" min="1" max="10" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- ВОЛ -->
+            <foreignObject x="399" y="427" width="56" height="42">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="vol" min="1" max="10" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- Удача 1 -->
+            <foreignObject x="399" y="502" width="23" height="30">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="udacha1" placeholder="" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- УДА -->
+            <foreignObject x="433" y="502" width="21" height="29">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="yda" min="1" max="10" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- СКО -->
+            <foreignObject x="398" y="554" width="56" height="42">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="sko" min="1" max="10" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- ТЕЛ -->
+            <foreignObject x="398" y="618" width="56" height="42">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="tel" min="1" max="10" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- Эмпатия 1 -->
+            <foreignObject x="398" y="695" width="24" height="30">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="emp1" placeholder="" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- ЭМП -->
+            <foreignObject x="432" y="695" width="22" height="30">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="emp" min="1" max="10" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- Здоровье 1 -->
+            <foreignObject x="157" y="760" width="67" height="29">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="zdorov1" placeholder="" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- Здоровье -->
+            <foreignObject x="234" y="760" width="68" height="29">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="zdorov" placeholder="" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- Зависимости -->
+            <foreignObject x="311" y="849" width="145" height="57">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="char-notes" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Человечность 1 -->
+            <foreignObject x="158" y="695" width="105" height="30">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="chel1" placeholder="" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- Человечность -->
+            <foreignObject x="274" y="695" width="104" height="30">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="chel" placeholder="" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- Критические травмы -->
+            <foreignObject x="312" y="760" width="145" height="71">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="krittrav" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Тяжёлое ранение -->
+            <foreignObject x="210" y="792" width="93" height="38">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="tijran" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Испытание против смерти -->
+            <foreignObject x="161" y="871" width="60" height="35">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="ispst" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Защита головы -->
+            <foreignObject x="650" y="816" width="46" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="zachgol" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Штраф защиты головы -->
+            <foreignObject x="699" y="816" width="61" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="hgolov" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Защита туловища -->
+            <foreignObject x="650" y="838" width="46" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="zachtyl" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Штраф защиты туловища -->
+            <foreignObject x="699" y="838" width="61" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="htulov" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Щит -->
+            <foreignObject x="650" y="860" width="46" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="chit" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Штраф защиты щита -->
+            <foreignObject x="699" y="860" width="61" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="hchit" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- БЛОК ОРУЖИЯ -->
+            <!-- Оружие 1 -->
+            <foreignObject x="775" y="771" width="148" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="oru1" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Урон 1 -->
+            <foreignObject x="927" y="771" width="46" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="yron1" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Боеприпас 1 -->
+            <foreignObject x="977" y="771" width="57" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="boep1" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- ROF 1 -->
+            <foreignObject x="1037" y="771" width="41" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="rof1" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Заметки 1 -->
+            <foreignObject x="1082" y="771" width="194" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zametki1" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Оружие 2 -->
+            <foreignObject x="775" y="793" width="148" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="oru2" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Урон 2 -->
+            <foreignObject x="927" y="793" width="46" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="yron2" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Боеприпас 2 -->
+            <foreignObject x="977" y="793" width="57" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="boep2" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- ROF 2 -->
+            <foreignObject x="1037" y="793" width="41" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="rof2" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Заметки 2 -->
+            <foreignObject x="1082" y="793" width="194" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zametki2" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Оружие 3 -->
+            <foreignObject x="775" y="814" width="148" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="oru3" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Урон 3 -->
+            <foreignObject x="927" y="814" width="46" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="yron3" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Боеприпас 3 -->
+            <foreignObject x="977" y="814" width="57" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="boep3" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- ROF 3 -->
+            <foreignObject x="1037" y="814" width="41" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="rof3" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Заметки 3 -->
+            <foreignObject x="1082" y="814" width="194" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zametki3" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Оружие 4 -->
+            <foreignObject x="775" y="836" width="148" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="oru4" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Урон 4 -->
+            <foreignObject x="927" y="836" width="46" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="yron4" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Боеприпас 4 -->
+            <foreignObject x="977" y="836" width="57" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="boep4" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- ROF 4 -->
+            <foreignObject x="1037" y="836" width="41" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="rof4" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Заметки 4 -->
+            <foreignObject x="1082" y="836" width="194" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zametki4" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Оружие 5 -->
+            <foreignObject x="775" y="859" width="148" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="oru5" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+            
+            <!-- Урон 5 -->
+            <foreignObject x="927" y="859" width="46" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="yron5" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Боеприпас 5 -->
+            <foreignObject x="977" y="859" width="57" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="boep5" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- ROF 5 -->
+            <foreignObject x="1037" y="859" width="41" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="rof5" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Заметки 5 -->
+            <foreignObject x="1082" y="859" width="194" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zametki5" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Оружие 6 -->
+            <foreignObject x="775" y="880" width="148" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="oru6" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Урон 6 -->
+            <foreignObject x="927" y="880" width="46" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="yron6" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Боеприпас 6 -->
+            <foreignObject x="977" y="880" width="57" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="boep6" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- ROF 6 -->
+            <foreignObject x="1037" y="880" width="41" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="rof6" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Заметки 6 -->
+            <foreignObject x="1082" y="880" width="194" height="18">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zametki6" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>        
+
+            <!-- НАВЫКИ ВОСПРИЯТИЯ -->
+            <!-- Концентрация (Воля) -->
+            <foreignObject x="627" y="112" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="1-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="112" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="1-stat" class="sheet-readonly" data-stat="vol"></div>
+            </foreignObject>
+            <foreignObject x="697" y="112" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="1-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Скрытие (Интеелкт) -->
+            <foreignObject x="627" y="134" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="2-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="135" width="33" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="2-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="135" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="2-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Чтение по губам (Интеелкт) -->
+            <foreignObject x="627" y="156" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="3-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="156" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="3-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="156" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="3-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Внимательность (Интеелкт) -->
+            <foreignObject x="627" y="178" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="4-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="179" width="33" height="17">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="4-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="179" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="4-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Выслеживание (Интеелкт) -->
+            <foreignObject x="627" y="200" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="5-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="200" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="5-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="200" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="5-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- ФИЗИЧЕСКИЕ НАВЫКИ -->
+            <!-- Атлетика (Ловкость) -->
+            <foreignObject x="627" y="244" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="6-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="244" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="6-stat" class="sheet-readonly" data-stat="lov"></div>
+            </foreignObject>
+            <foreignObject x="697" y="244" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="6-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Актробатика (Ловкость) -->
+            <foreignObject x="627" y="266" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="7-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="266" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="7-stat" class="sheet-readonly" data-stat="lov"></div>
+            </foreignObject>
+            <foreignObject x="697" y="266" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="7-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Танец (Ловкость) -->
+            <foreignObject x="627" y="288" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="8-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="288" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="8-stat" class="sheet-readonly" data-stat="lov"></div>
+            </foreignObject>
+            <foreignObject x="697" y="288" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="8-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Выносливость (Воли) -->
+            <foreignObject x="627" y="310" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="9-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="310" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="9-stat" class="sheet-readonly" data-stat="vol"></div>
+            </foreignObject>
+            <foreignObject x="697" y="310" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="9-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Сопротивление пыткам (Воли) -->
+            <foreignObject x="627" y="332" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="10-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="332" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="10-stat" class="sheet-readonly" data-stat="vol"></div>
+            </foreignObject>
+            <foreignObject x="697" y="332" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="10-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Скрытность (Ловкость) -->
+            <foreignObject x="627" y="354" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="11-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="354" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="11-stat" class="sheet-readonly" data-stat="lov"></div>
+            </foreignObject>
+            <foreignObject x="697" y="354" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="11-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- НАВЫКИ УПРАВЛЕНИЯ -->
+            <!-- Вождение (Реакция) -->
+            <foreignObject x="627" y="398" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="12-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="398" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="12-stat" class="sheet-readonly" data-stat="rea"></div>
+            </foreignObject>
+            <foreignObject x="697" y="398" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="12-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Пилотирование (Реакция) -->
+            <foreignObject x="627" y="420" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="13-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="420" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="13-stat" class="sheet-readonly" data-stat="rea"></div>
+            </foreignObject>
+            <foreignObject x="697" y="420" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="13-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Судоходство (Реакция) -->
+            <foreignObject x="627" y="443" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="14-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="443" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="14-stat" class="sheet-readonly" data-stat="rea"></div>
+            </foreignObject>
+            <foreignObject x="697" y="443" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="14-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Верховая езда (Реакция) -->
+            <foreignObject x="627" y="464" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="15-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="464" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="15-stat" class="sheet-readonly" data-stat="rea"></div>
+            </foreignObject>
+            <foreignObject x="697" y="464" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="15-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- ОБРАЗОВАТЕЛЬНЫЕ НАВЫКИ -->
+            <!-- Бухгалтерия (Интелект) -->
+            <foreignObject x="627" y="507" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="16-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="507" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="16-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="507" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="16-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Обращение с животными (Интеелкт) -->
+            <foreignObject x="627" y="530" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="17-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="530" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="17-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="530" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="17-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Бюократия (Интеелкт) -->
+            <foreignObject x="627" y="552" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="18-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="552" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="18-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="552" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="18-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Бизнес (Интеелкт) -->
+            <foreignObject x="627" y="573" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="19-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="573" width="33" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="19-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="573" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="19-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Композиция (Интеелкт) -->
+            <foreignObject x="627" y="596" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="20-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="596" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="20-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="596" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="20-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Криминалогия (Интелект) -->
+            <foreignObject x="627" y="617" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="21-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="617" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="21-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="617" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="21-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Криптография (Интеелкт) -->
+            <foreignObject x="627" y="639" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="22-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="639" width="33" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="22-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="639" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="22-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Дедукция (Интеелкт) -->
+            <foreignObject x="627" y="662" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="23-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="662" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="23-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="662" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="23-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Образовние (Интеелкт) -->
+            <foreignObject x="627" y="684" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="24-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="684" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="24-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="684" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="24-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Азартные игры (Интеелкт) -->
+            <foreignObject x="627" y="705" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="25-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="660" y="705" width="33" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="25-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="697" y="705" width="34" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="25-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Язык, Уличный сленг (Интеелкт) -->
+            <foreignObject x="900" y="134" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="26-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="135" width="32" height="17">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="26-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="967" y="135" width="35" height="17">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="26-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Язык, Название языка (Интеелкт) -->
+            <foreignObject x="900" y="157" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="27-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="156" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="27-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="967" y="157" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="27-sum" class="sheet-readonly"></div>
+            </foreignObject>
+            <foreignObject x="787" y="157" width="107" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="270" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Язык, Название языка (Интеелкт) -->
+             <foreignObject x="900" y="178" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="28-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="178" width="32" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="28-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="967" y="179" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="28-sum" class="sheet-readonly"></div>
+            </foreignObject>
+            <foreignObject x="787" y="179" width="107" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="280" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Поиск информации (Интеелкт) -->
+            <foreignObject x="900" y="200" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="29-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="200" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="29-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="967" y="201" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="29-sum" class="sheet-readonly"></div>
+            </foreignObject>
+            
+            <!-- Знание месности, Твой дом (Интеелкт) -->
+            <foreignObject x="900" y="244" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="30-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="244" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="30-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="967" y="246" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="30-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Знание месности, Название (Интеелкт) -->
+            <foreignObject x="900" y="266" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="31-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="266" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="31-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="967" y="268" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="31-sum" class="sheet-readonly"></div>
+            </foreignObject>
+            <foreignObject x="787" y="266" width="107" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="310" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Знание месности, Название (Интеелкт) -->
+             <foreignObject x="900" y="288" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="32-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="289" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="32-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="967" y="289" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="32-sum" class="sheet-readonly"></div>
+            </foreignObject>
+            <foreignObject x="787" y="289" width="107" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="320" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Наука, Название (Интеелкт) -->
+            <foreignObject x="900" y="332" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="33-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="332" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="33-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="967" y="332" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="33-sum" class="sheet-readonly"></div>
+            </foreignObject>
+            <foreignObject x="787" y="333" width="107" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="330" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Наука, Название (Интеелкт) -->
+             <foreignObject x="900" y="353" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="34-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="353" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="34-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="967" y="353" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="34-sum" class="sheet-readonly"></div>
+            </foreignObject>
+            <foreignObject x="787" y="355" width="107" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="340" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Тактика (Интеелкт) -->
+             <foreignObject x="900" y="376" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="71-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="376" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="71-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="967" y="376" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="71-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Выживание в пустыне (Интеелкт) -->
+             <foreignObject x="900" y="398" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="72-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="398" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="72-stat" class="sheet-readonly" data-stat="int"></div>
+            </foreignObject>
+            <foreignObject x="967" y="398" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="72-sum" class="sheet-readonly"></div>
+            </foreignObject>
+            
+            <!-- НАВЫКИ БЛИЖНЕГО БОЯ -->
+            <!-- Рукопашный бойй (Ловкость) -->
+            <foreignObject x="900" y="443" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="35-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="443" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="35-stat" class="sheet-readonly" data-stat="lov"></div>
+            </foreignObject>
+            <foreignObject x="967" y="443" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="35-sum" class="sheet-readonly"></div>
+            </foreignObject>
+            
+            <!-- Уклонение (Ловкость) -->
+            <foreignObject x="900" y="464" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="36-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="464" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="36-stat" class="sheet-readonly" data-stat="lov"></div>
+            </foreignObject>
+            <foreignObject x="967" y="464" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="36-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Боевые искуства (Ловкость) -->
+            <foreignObject x="900" y="485" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="37-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="485" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="37-stat" class="sheet-readonly" data-stat="lov"></div>
+            </foreignObject>
+            <foreignObject x="967" y="485" width="35" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="37-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Оружие ближнего боя (Ловкость) -->
+            <foreignObject x="900" y="507" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="38-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="507" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="38-stat" class="sheet-readonly" data-stat="lov"></div>
+            </foreignObject>
+            <foreignObject x="967" y="507" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="38-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- СЦЕНИЧЕСКИЕ НАВЫКИ -->
+            <!-- Актерское мастерство (Интеелкт) -->
+            <foreignObject x="900" y="552" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="39-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="552" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="39-stat" class="sheet-readonly" data-stat="har"></div>
+            </foreignObject>
+            <foreignObject x="967" y="552" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="39-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Игра на инструменте, Название (Техника) -->
+            <foreignObject x="900" y="596" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="40-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="596" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="40-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="967" y="596" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="40-sum" class="sheet-readonly"></div>
+            </foreignObject>
+            <foreignObject x="787" y="596" width="107" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="400" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- Игра на инструменте, Название (Техника) -->
+            <foreignObject x="900" y="617" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="41-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="617" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="41-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="967" y="617" width="35" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="41-sum" class="sheet-readonly"></div>
+            </foreignObject>
+            <foreignObject x="787" y="617" width="107" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="410" placeholder="" class="sheet-field" style="text-align:center;"></input>
+            </foreignObject>
+
+            <!-- НАВЫКИ ДАЛЬНЕГО БОЯ -->
+            <!-- Стрельба из лука (Реакции) -->
+            <foreignObject x="900" y="662" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="42-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="662" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="42-stat" class="sheet-readonly" data-stat="rea"></div>
+            </foreignObject>
+            <foreignObject x="967" y="662" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="42-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Автоматический огонь (Реакции) -->
+            <foreignObject x="900" y="684" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="43-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="684" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="43-stat" class="sheet-readonly" data-stat="rea"></div>
+            </foreignObject>
+            <foreignObject x="967" y="684" width="35" height="18">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="43-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Пистолеты (Реакции) -->
+            <foreignObject x="900" y="705" width="29" height="17">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="44-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="932" y="706" width="32" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="44-stat" class="sheet-readonly" data-stat="rea"></div>
+            </foreignObject>
+            <foreignObject x="967" y="706" width="35" height="19">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="44-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Орожие крупного калибра (Реакции) -->
+            <foreignObject x="1171" y="112" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="45-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="112" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="45-stat" class="sheet-readonly" data-stat="rea"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="112" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="45-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Тактическое оружие (Реакции) -->
+            <foreignObject x="1171" y="133" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="46-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="135" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="46-stat" class="sheet-readonly" data-stat="rea"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="135" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="46-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- СОЦИАЛЬНЫЕ НАВЫКИ -->
+            <!-- Подкуп (Харизма) -->
+            <foreignObject x="1171" y="178" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="47-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="179" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="47-stat" class="sheet-readonly" data-stat="har"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="179" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="47-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Общение (Эмпатия) -->
+            <foreignObject x="1171" y="200" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="48-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="200" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="48-stat" class="sheet-readonly" data-stat="emp"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="200" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="48-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Проницательность (Эмпатия) -->
+            <foreignObject x="1171" y="221" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="49-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="221" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="49-stat" class="sheet-readonly" data-stat="emp"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="221" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="49-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Допрос (Харизма) -->
+            <foreignObject x="1171" y="244" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="50-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="244" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="50-stat" class="sheet-readonly" data-stat="har"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="244" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="50-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Убеждение (Харизма) -->
+            <foreignObject x="1171" y="266" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="51-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="266" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="51-stat" class="sheet-readonly" data-stat="har"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="266" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="51-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Уход за собой (Харизма) -->
+            <foreignObject x="1171" y="288" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="52-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="288" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="52-stat" class="sheet-readonly" data-stat="har"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="288" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="52-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Знаток улиц (Харизма) -->
+            <foreignObject x="1171" y="310" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="53-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="310" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="53-stat" class="sheet-readonly" data-stat="har"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="310" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="53-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Торговля (Харизма) -->
+            <foreignObject x="1171" y="332" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="54-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="332" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="54-stat" class="sheet-readonly" data-stat="har"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="332" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="54-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Гардероб и стиль (Харизма) -->
+            <foreignObject x="1171" y="354" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="55-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="354" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="55-stat" class="sheet-readonly" data-stat="har"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="354" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="55-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- ТЕХНИЧЕСКИЕ НАВЫКИ -->
+            <!-- Авиационные технологии (Техника) -->
+            <foreignObject x="1171" y="398" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="56-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="398" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="56-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="398" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="56-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Знание техники (Техника) -->
+            <foreignObject x="1171" y="420" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="57-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="420" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="57-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="420" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="57-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Кибертехника (Техника) -->
+            <foreignObject x="1171" y="443" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="58-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="443" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="58-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="443" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="58-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Подрывник (Техника) -->
+            <foreignObject x="1171" y="464" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="59-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="464" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="59-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="464" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="59-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Электроника (Техника) -->
+            <foreignObject x="1171" y="485" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="60-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="485" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="60-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="485" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="60-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Первая помощь (Техника) -->
+            <foreignObject x="1171" y="507" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="61-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="507" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="61-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="507" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="61-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Фальсификация (Техника) -->
+            <foreignObject x="1171" y="530" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="62-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="530" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="62-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="530" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="62-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Автомеханника (Техника) -->
+            <foreignObject x="1171" y="552" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="63-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="552" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="63-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="552" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="63-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Художественное ремесло (Техника) -->
+            <foreignObject x="1171" y="573" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="64-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="573" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="64-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="573" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="64-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Парамедик (Техника) -->
+            <foreignObject x="1171" y="596" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="65-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="596" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="65-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="596" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="65-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Кино- и фототехника (Техника) -->
+            <foreignObject x="1171" y="617" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="66-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="617" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="66-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="617" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="66-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Взлом замков (Техника) -->
+            <foreignObject x="1171" y="639" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="67-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="639" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="67-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="639" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="67-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Карманник (Техника) -->
+            <foreignObject x="1171" y="662" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="68-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="662" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="68-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="662" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="68-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Морские технологии (Техника) -->
+            <foreignObject x="1171" y="684" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="69-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="684" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="69-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="684" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="69-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+            <!-- Оружейник (Техника) -->
+            <foreignObject x="1171" y="705" width="29" height="18">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="70-rank" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+            <foreignObject x="1204" y="705" width="32" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="70-stat" class="sheet-readonly" data-stat="teh"></div>
+            </foreignObject>
+            <foreignObject x="1239" y="705" width="34" height="20">
+                <div xmlns="http://www.w3.org/1999/xhtml" id="70-sum" class="sheet-readonly"></div>
+            </foreignObject>
+
+        </svg>
+    </div>
+
+    <!-- ============ СТРАНИЦА 2 ============ -->
+    <div class="sheet-page">
+        <svg viewBox="0 0 1400 1000" xmlns="http://www.w3.org/2000/svg">
+            <image href="img/page-2.jpg" x="0" y="0" width="1400" height="1000"/>
+
+            <!-- Псевдонимы -->
+            <foreignObject x="157" y="109" width="495" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="psevdo" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Пункты улучшений -->
+            <foreignObject x="315" y="138" width="61" height="31">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="pynktiulu2" placeholder="" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- Репутация -->
+            <foreignObject x="228" y="174" width="148" height="36">
+                <input type="number" xmlns="http://www.w3.org/1999/xhtml" id="repu" placeholder="" class="sheet-field" style="text-align:center;"/>
+            </foreignObject>
+
+            <!-- Приобретение репутации -->
+            <foreignObject x="381" y="158" width="270" height="52">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="preobrepu" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Культурное наследие -->
+            <foreignObject x="157" y="277" width="242" height="31">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kultura" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Личность -->
+            <foreignObject x="412" y="278" width="238" height="29">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="lichnost" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стиль одежды -->
+            <foreignObject x="157" y="326" width="242" height="30">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilodej" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Прическа -->
+            <foreignObject x="412" y="326" width="240" height="30">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="prichoska" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Что ты ценишь больше всего? -->
+            <foreignObject x="253" y="362" width="146" height="44">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="chtotichenih" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Отношение к людям -->
+            <foreignObject x="500" y="361" width="150" height="46">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="otnoheniekludam" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Самый близкий человек -->
+            <foreignObject x="262" y="410" width="137" height="44">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="samiblizki" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Самое ценное, чем ты обладаешь -->
+            <foreignObject x="527" y="410" width="124" height="44">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="samoechenoe" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- История семьи -->
+            <foreignObject x="215" y="459" width="186" height="44">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="istoriasemi" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Среда, в которой прошло детство -->
+            <foreignObject x="524" y="459" width="126" height="44">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="sreda" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Семейный кризис -->
+            <foreignObject x="156" y="523" width="243" height="29">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="semeinikrisiz" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Жизненные цели -->
+            <foreignObject x="412" y="523" width="239" height="29">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="jizninie" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Друзья 1 -->
+            <foreignObject x="188" y="580" width="211" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="drug1" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Друзья 2 -->
+            <foreignObject x="188" y="629" width="211" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="drug2" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Друзья 3 -->
+            <foreignObject x="188" y="678" width="211" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="drug3" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Трагическая любовь 1 -->
+            <foreignObject x="441" y="580" width="211" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="lubov1" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Трагическая любовь 2 -->
+            <foreignObject x="441" y="629" width="211" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="lubov2" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Трагическая любовь 3 -->
+            <foreignObject x="441" y="678" width="211" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="lubov3" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Враги, Кто 1 -->
+            <foreignObject x="248" y="753" width="79" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vkto1" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>            
+
+            <!-- Враги, Причина вражды 1 -->
+            <foreignObject x="329" y="753" width="89" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vprich1" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Враги, Что они могут сделать? 1 -->
+            <foreignObject x="422" y="753" width="129" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vchtos1" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Враги, Что должно произойти? 1 -->
+            <foreignObject x="554" y="753" width="98" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vchtopoi1" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Враги, Кто 2 -->
+            <foreignObject x="248" y="802" width="79" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vkto2" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Враги, Причина вражды 2 -->
+            <foreignObject x="329" y="802" width="89" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vprich2" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Враги, Что они могут сделать? 2 -->
+            <foreignObject x="422" y="802" width="129" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vchtos2" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Враги, Что должно произойти? 2 -->
+            <foreignObject x="554" y="802" width="98" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vchtopoi2" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Враги, Кто 3 -->
+            <foreignObject x="248" y="851" width="79" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vkto3" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Враги, Причина вражды 3 -->
+            <foreignObject x="329" y="851" width="89" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vprich3" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Враги, Что они могут сделать? 3 -->
+            <foreignObject x="422" y="851" width="129" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vchtos3" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Враги, Что должно произойти? 3 -->
+            <foreignObject x="554" y="851" width="98" height="45">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="vchtopoi3" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Снаряжение 1 -->
+            <foreignObject x="682" y="118" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 1 -->
+            <foreignObject x="845" y="118" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 2 -->
+            <foreignObject x="682" y="139" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 2 -->
+            <foreignObject x="845" y="139" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 3 -->
+            <foreignObject x="682" y="162" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 3 -->
+            <foreignObject x="845" y="162" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 4 -->
+            <foreignObject x="682" y="183" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 4 -->
+            <foreignObject x="845" y="183" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 5 -->
+            <foreignObject x="682" y="206" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 5 -->
+            <foreignObject x="845" y="206" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 6 -->
+            <foreignObject x="682" y="227" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar6" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 6 -->
+            <foreignObject x="845" y="227" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar6" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 7 -->
+            <foreignObject x="682" y="248" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar7" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 7 -->
+            <foreignObject x="845" y="248" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar7" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 8 -->
+            <foreignObject x="682" y="271" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar8" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 8 -->
+            <foreignObject x="845" y="271" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar8" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 9 -->
+            <foreignObject x="682" y="294" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar9" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 9 -->
+            <foreignObject x="845" y="294" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar9" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 10 -->
+            <foreignObject x="682" y="316" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar10" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 10 -->
+            <foreignObject x="845" y="316" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar10" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 11 -->
+            <foreignObject x="682" y="338" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar11" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 11 -->
+            <foreignObject x="845" y="338" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar11" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 12 -->
+            <foreignObject x="682" y="360" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar12" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 12 -->
+            <foreignObject x="845" y="360" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar12" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 13 -->
+            <foreignObject x="682" y="382" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar13" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 13 -->
+            <foreignObject x="845" y="382" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar13" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 14 -->
+            <foreignObject x="682" y="403" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar14" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 14 -->
+            <foreignObject x="845" y="403" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar14" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 15 -->
+            <foreignObject x="682" y="425" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar15" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 15 -->
+            <foreignObject x="845" y="425" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar15" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 16 -->
+            <foreignObject x="682" y="448" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar16" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 16 -->
+            <foreignObject x="845" y="448" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar16" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 17 -->
+            <foreignObject x="682" y="448" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar17" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 17 -->
+            <foreignObject x="845" y="448" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar17" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 18 -->
+            <foreignObject x="682" y="471" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar18" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 18 -->
+            <foreignObject x="845" y="471" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar18" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Снаряжение 19 -->
+            <foreignObject x="682" y="492" width="161" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="snar19" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Заметки снаряжения 19 -->
+            <foreignObject x="845" y="492" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="zamsnar19" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боеприпасы -->
+            <foreignObject x="845" y="514" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="boepripasi1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Наличные -->
+            <foreignObject x="845" y="536" width="423" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="nalichnie" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Образ и стиль -->
+            <foreignObject x="681" y="595" width="588" height="73">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="obrazistil" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Жильё -->
+            <foreignObject x="681" y="696" width="262" height="24">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="jile" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Арендная плата -->
+            <foreignObject x="996" y="682" width="74" height="38">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="arendnai" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Образ жизни -->
+            <foreignObject x="1120" y="682" width="149" height="38">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="obrazjizni" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+            <!-- Ролевой жизненный путь -->
+            <foreignObject x="681" y="754" width="588" height="145">
+                <textarea xmlns="http://www.w3.org/1999/xhtml" id="roljizput" placeholder="" class="sheet-field" style="resize:none;line-height:1.3;"></textarea>
+            </foreignObject>
+
+
+
+        </svg>
+    </div>
+
+    <!-- ============ СТРАНИЦА 3 ============ -->
+    <div class="sheet-page">
+        <svg viewBox="0 0 1400 1000" xmlns="http://www.w3.org/2000/svg">
+            <image href="img/page-3.jpg" x="0" y="0" width="1400" height="1000"/>
+
+            <!-- Кибераудио (чекбокс) -->
+            <foreignObject x="519" y="115" width="32" height="20">
+                <input type="checkbox" xmlns="http://www.w3.org/1999/xhtml" id="kaudio" class="sheet-checkbox"/>
+            </foreignObject>
+
+            <!-- Кибераудио 1 -->
+            <foreignObject x="400" y="138" width="150" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kaudio1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Кибераудио информация 1 -->
+            <foreignObject x="554" y="138" width="151" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kainfo1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Кибераудио 2 -->
+            <foreignObject x="400" y="159" width="150" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kaudio2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Кибераудио информация 2 -->
+            <foreignObject x="554" y="159" width="151" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kainfo2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Кибераудио 3 -->
+            <foreignObject x="400" y="181" width="150" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kaudio3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Кибераудио информация 3 -->
+            <foreignObject x="554" y="181" width="151" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kainfo3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правый киберглаз (чекбокс) -->
+            <foreignObject x="278" y="229" width="32" height="20">
+                <input type="checkbox" xmlns="http://www.w3.org/1999/xhtml" id="kpglaz" class="sheet-checkbox"/>
+            </foreignObject>
+
+            <!-- Правый киберглаз 1 -->
+            <foreignObject x="158" y="251" width="150" height="16">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpglaz1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правый киберглаз информация 1 -->
+            <foreignObject x="313" y="252" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpginfo1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правый киберглаз 2 -->
+            <foreignObject x="158" y="273" width="150" height="16">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpglaz2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правый киберглаз информация 2 -->
+            <foreignObject x="313" y="273" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpginfo2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правый киберглаз 3 -->
+            <foreignObject x="158" y="295" width="150" height="16">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpglaz3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правый киберглаз информация 3 -->
+            <foreignObject x="313" y="295" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpginfo3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левый киберглаз (чекбокс) -->
+            <foreignObject x="768" y="229" width="32" height="20">
+                <input type="checkbox" xmlns="http://www.w3.org/1999/xhtml" id="klglaz" class="sheet-checkbox"/>
+            </foreignObject>
+
+            <!-- Левый киберглаз 1 -->
+            <foreignObject x="650" y="251" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klglaz1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левый киберглаз информация 1 -->
+            <foreignObject x="804" y="252" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klginfo1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левый киберглаз 2 -->
+            <foreignObject x="650" y="273" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klglaz2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левый киберглаз информация 2 -->
+            <foreignObject x="804" y="273" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klginfo2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левый киберглаз 3 -->
+            <foreignObject x="650" y="295" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klglaz3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левый киберглаз информация 3 -->
+            <foreignObject x="804" y="295" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klginfo3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая киберрука (чекбокс) -->
+            <foreignObject x="271" y="350" width="32" height="20">
+                <input type="checkbox" xmlns="http://www.w3.org/1999/xhtml" id="kpruka" class="sheet-checkbox"/>
+            </foreignObject>
+
+            <!-- Правая киберрука 1 -->
+            <foreignObject x="153" y="372" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpruka1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая киберрука информация 1 -->
+            <foreignObject x="306" y="372" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kprinfo1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая киберрука 2 -->
+            <foreignObject x="153" y="393" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpruka2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая киберрука информация 2 -->
+            <foreignObject x="306" y="393" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kprinfo2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая киберрука 3 -->
+            <foreignObject x="153" y="416" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpruka3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая киберрука информация 3 -->
+            <foreignObject x="306" y="416" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kprinfo3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая киберрука 4 -->
+            <foreignObject x="153" y="438" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpruka4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая киберрука информация 4 -->
+            <foreignObject x="306" y="438" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kprinfo4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая киберрука (чекбокс) -->
+            <foreignObject x="769" y="350" width="32" height="20">
+                <input type="checkbox" xmlns="http://www.w3.org/1999/xhtml" id="klruka" class="sheet-checkbox"/>
+            </foreignObject>
+
+            <!-- Левая киберрука 1 -->
+            <foreignObject x="650" y="372" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klruka1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая киберрука информация 1 -->
+            <foreignObject x="804" y="372" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klrinfo1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая киберрука 2 -->
+            <foreignObject x="650" y="393" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klruka2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая киберрука информация 2 -->
+            <foreignObject x="804" y="393" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klrinfo2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая киберрука 3 -->
+            <foreignObject x="650" y="416" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klruka3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая киберрука информация 3 -->
+            <foreignObject x="804" y="416" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klrinfo3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая киберрука 4 -->
+            <foreignObject x="650" y="438" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klruka4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая киберрука информация 4 -->
+            <foreignObject x="804" y="438" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klrinfo4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Нейроинтерфейс (чекбокс) -->
+            <foreignObject x="520" y="652" width="32" height="20">
+                <input type="checkbox" xmlns="http://www.w3.org/1999/xhtml" id="knero" class="sheet-checkbox"/>
+            </foreignObject>
+
+            <!-- Нейроинтерфейс 1 -->
+            <foreignObject x="401" y="674" width="149" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="nero1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Нейроинтерфейс информация 1 -->
+            <foreignObject x="555" y="674" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="ninfo1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Нейроинтерфейс 2 -->
+            <foreignObject x="401" y="696" width="149" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="nero2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Нейроинтерфейс информация 2 -->
+            <foreignObject x="555" y="696" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="ninfo2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Нейроинтерфейс 3 -->
+            <foreignObject x="401" y="718" width="149" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="nero3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Нейроинтерфейс информация 3 -->
+            <foreignObject x="555" y="718" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="ninfo3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Нейроинтерфейс 4 -->
+            <foreignObject x="401" y="739" width="149" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="nero4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Нейроинтерфейс информация 4 -->
+            <foreignObject x="555" y="739" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="ninfo4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Нейроинтерфейс 5 -->
+            <foreignObject x="401" y="761" width="149" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="nero5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Нейроинтерфейс информация 5 -->
+            <foreignObject x="555" y="761" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="ninfo5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая кибернога (чекбокс) -->
+            <foreignObject x="276" y="818" width="32" height="20">
+                <input type="checkbox" xmlns="http://www.w3.org/1999/xhtml" id="kpnoga" class="sheet-checkbox"/>
+            </foreignObject>
+
+            <!-- Правая кибернога 1 -->
+            <foreignObject x="158" y="842" width="150" height="16">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpnoga1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая кибернога информация 1 -->
+            <foreignObject x="313" y="842" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpninfo1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая кибернога 2 -->
+            <foreignObject x="158" y="863" width="150" height="16">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpnoga2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая кибернога информация 2 -->
+            <foreignObject x="313" y="863" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpninfo2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая кибернога 3 -->
+            <foreignObject x="158" y="884" width="150" height="16">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpnoga3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Правая кибернога информация 3 -->
+            <foreignObject x="313" y="884" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kpninfo3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая кибернога (чекбокс) -->
+            <foreignObject x="768" y="818" width="32" height="20">
+                <input type="checkbox" xmlns="http://www.w3.org/1999/xhtml" id="klnoga" class="sheet-checkbox"/>
+            </foreignObject>
+
+            <!-- Левая кибернога 1 -->
+            <foreignObject x="650" y="842" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klnoga1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая кибернога информация 1 -->
+            <foreignObject x="804" y="842" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klninfo1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая кибернога 2 -->
+            <foreignObject x="650" y="863" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klnoga2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая кибернога информация 2 -->
+            <foreignObject x="804" y="863" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="kllinfo2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая кибернога 3 -->
+            <foreignObject x="650" y="884" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klnoga3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Левая кибернога информация 3 -->
+            <foreignObject x="804" y="884" width="150" height="17">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="klninfo3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант 1 -->
+            <foreignObject x="989" y="139" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutk1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант информация 1 -->
+            <foreignObject x="1130" y="139" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutki1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант 2 -->
+            <foreignObject x="989" y="162" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutk2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант информация 2 -->
+            <foreignObject x="1130" y="162" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutki2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант 3 -->
+            <foreignObject x="989" y="185" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutk3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант информация 3 -->
+            <foreignObject x="1130" y="185" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutki3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант 4 -->
+            <foreignObject x="989" y="207" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutk4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант информация 4 -->
+            <foreignObject x="1130" y="207" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutki4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант 5 -->
+            <foreignObject x="989" y="229" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutk5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант информация 5 -->
+            <foreignObject x="1130" y="229" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutki5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант 6 -->
+            <foreignObject x="989" y="251" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutk6" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант информация 6 -->
+            <foreignObject x="1130" y="251" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutki6" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант 7 -->
+            <foreignObject x="989" y="273" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutk7" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внутренний киберимплант информация 7 -->
+            <foreignObject x="1130" y="273" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnutki7" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант 1 -->
+            <foreignObject x="989" y="344" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehk1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант информация 1 -->
+            <foreignObject x="1130" y="344" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehki1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант 2 -->
+            <foreignObject x="989" y="367" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehk2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант информация 2 -->
+            <foreignObject x="1130" y="367" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehki2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант 3 -->
+            <foreignObject x="989" y="389" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehk3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант информация 3 -->
+            <foreignObject x="1130" y="389" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehki3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант 4 -->
+            <foreignObject x="989" y="411" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehk4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант информация 4 -->
+            <foreignObject x="1130" y="411" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehki4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант 5 -->
+            <foreignObject x="989" y="433" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehk5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант информация 5 -->
+            <foreignObject x="1130" y="433" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehki5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант 6 -->
+            <foreignObject x="989" y="455" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehk6" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант информация 6 -->
+            <foreignObject x="1130" y="455" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehki6" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант 7 -->
+            <foreignObject x="989" y="477" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehk7" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Внешний киберимплант информация 7 -->
+            <foreignObject x="1130" y="477" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="vnehki7" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант 1 -->
+            <foreignObject x="989" y="548" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilk1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант информация 1 -->
+            <foreignObject x="1130" y="548" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilki1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант 2 -->
+            <foreignObject x="989" y="570" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilk2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант информация 2 -->
+            <foreignObject x="1130" y="570" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilki2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант 3 -->
+            <foreignObject x="989" y="592" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilk3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант информация 3 -->
+            <foreignObject x="1130" y="592" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilki3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант 4 -->
+            <foreignObject x="989" y="614" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilk4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант информация 4 -->
+            <foreignObject x="1130" y="614" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilki4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант 5 -->
+            <foreignObject x="989" y="636" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilk5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант информация 5 -->
+            <foreignObject x="1130" y="636" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilki5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант 6 -->
+            <foreignObject x="989" y="658" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilk6" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант информация 6 -->
+            <foreignObject x="1130" y="658" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilki6" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант 7 -->
+            <foreignObject x="989" y="680" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilk7" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Стилевой киберимплант информация 7 -->
+            <foreignObject x="1130" y="680" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="stilki7" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование 1 -->
+            <foreignObject x="989" y="752" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borg1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование информация 1 -->
+            <foreignObject x="1130" y="752" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borgi1" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование 2 -->
+            <foreignObject x="989" y="775" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borg2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование информация 2 -->
+            <foreignObject x="1130" y="775" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borgi2" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование 3 -->
+            <foreignObject x="989" y="797" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borg3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование информация 3 -->
+            <foreignObject x="1130" y="797" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borgi3" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование 4 -->
+            <foreignObject x="989" y="819" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borg4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование информация 4 -->
+            <foreignObject x="1130" y="819" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borgi4" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование 5 -->
+            <foreignObject x="989" y="841" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borg5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование информация 5 -->
+            <foreignObject x="1130" y="841" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borgi5" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование 6 -->
+            <foreignObject x="989" y="862" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borg6" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование информация 6 -->
+            <foreignObject x="1130" y="862" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borgi6" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование 7 -->
+            <foreignObject x="989" y="886" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borg7" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+            <!-- Боргирование информация 7 -->
+            <foreignObject x="1130" y="886" width="140" height="19">
+                <input type="text" xmlns="http://www.w3.org/1999/xhtml" id="borgi7" placeholder="" class="sheet-field"/>
+            </foreignObject>
+
+        </svg>
+    </div>
+
+</div>
+<script src="app.js"></script>
+<script>
+// ============================================================
+//  РЕДАКТОР ЛИСТА ПЕРСОНАЖА
+// ============================================================
+
+let sheetId = null;          // ID листа (null если новый)
+let isDirty = false;         // были ли изменения
+let saveTimeout = null;
+let avatarData = null;       // base64 аватара
+
+// ============================================================
+//  ОТЛАДКА
+// ============================================================
+document.getElementById('btn-debug').addEventListener('click', () => {
+    document.body.classList.toggle('debug');
+});
+
+// ============================================================
+//  ID ПАРАМЕТР ИЗ URL
+// ============================================================
+function getIdFromUrl() {
+    const params = new URLSearchParams(location.search);
+    return params.get('id');
+}
+
+// ============================================================
+//  АВТОРАСЧЁТ (остаётся как было)
+// ============================================================
+function getStatValue(statId) {
+    const el = document.getElementById(statId);
+    return el ? (parseInt(el.value) || 0) : 0;
+}
+function updateAllStats() {
+    document.querySelectorAll('.sheet-readonly[data-stat]').forEach(el => {
+        const value = getStatValue(el.dataset.stat);
+        el.textContent = value || '—';
+    });
+}
+function updateAllSums() {
+    document.querySelectorAll('[id$="-rank"]').forEach(rankEl => {
+        const prefix = rankEl.id.replace(/-rank$/, '');
+        const statEl = document.getElementById(prefix + '-stat');
+        const sumEl = document.getElementById(prefix + '-sum');
+        if (!statEl || !sumEl) return;
+        const rank = parseInt(rankEl.value) || 0;
+        const stat = parseInt(statEl.textContent) || 0;
+        sumEl.textContent = (rank + stat) || '—';
+    });
+}
+function recalculate() {
+    updateAllStats();
+    updateAllSums();
+}
+['int','rea','lov','teh','har','vol','yda','sko','tel','emp'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', recalculate);
+});
+document.addEventListener('input', (e) => {
+    if (e.target?.id?.endsWith('-rank')) updateAllSums();
+    isDirty = true;
+    scheduleAutosave();
+});
+document.addEventListener('change', (e) => {
+    if (e.target?.classList?.contains('sheet-checkbox')) {
+        isDirty = true;
+        scheduleAutosave();
+    }
+});
+document.addEventListener('input', (e) => {
+    if (e.target?.classList?.contains('sheet-field')) {
+        isDirty = true;
+        scheduleAutosave();
+    }
+});
+
+// ============================================================
+//  СБОР ДАННЫХ ИЗ ФОРМЫ
+// ============================================================
+function collectData() {
+    const data = {};
+    document.querySelectorAll('.sheet-field, .sheet-checkbox').forEach(el => {
+        if (!el.id) return;
+        data[el.id] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+    if (avatarData) data.avatar = avatarData;
+    return data;
+}
+
+// ============================================================
+//  ЗАПОЛНЕНИЕ ФОРМЫ ИЗ ДАННЫХ
+// ============================================================
+function fillData(data) {
+    if (!data) return;
+    Object.entries(data).forEach(([id, val]) => {
+        if (id === 'avatar') {
+            if (val) setAvatar(val);
+            return;
+        }
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === 'checkbox') el.checked = !!val;
+        else el.value = val;
+    });
+    recalculate();
+}
+
+// ============================================================
+//  АВАТАР
+// ============================================================
+function setAvatar(dataUrl) {
+    avatarData = dataUrl;
+    const img = document.getElementById('avatar-img');
+    const ph = document.getElementById('avatar-placeholder');
+    img.src = dataUrl;
+    img.style.display = 'block';
+    ph.style.display = 'none';
+}
+
+document.getElementById('avatar-file').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Читаем файл
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        // Сжимаем через canvas до 200x200
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX = 200;
+            let w = img.width, h = img.height;
+            const ratio = Math.min(MAX / w, MAX / h, 1);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+
+            // JPEG с качеством 0.85 — компактно
+            const compressed = canvas.toDataURL('image/jpeg', 0.85);
+            setAvatar(compressed);
+            isDirty = true;
+            scheduleAutosave();
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+
+// ============================================================
+//  СОХРАНЕНИЕ
+// ============================================================
+function setStatus(text, cls) {
+    const el = document.getElementById('save-status');
+    el.textContent = text;
+    el.className = 'sheet-save-status ' + (cls || '');
+}
+
+async function saveSheet(manual = false) {
+    const name = document.getElementById('sheet-name-display').value.trim();
+    if (!name) {
+        if (manual) {
+            toast('Введи имя персонажа', 'error');
+            document.getElementById('sheet-name-display').focus();
+        }
+        return;
+    }
+
+    setStatus('Сохранение…', 'saving');
+    const data = collectData();
+
+    try {
+        if (sheetId) {
+            await api.put(`/characters/${sheetId}`, { name, data });
+        } else {
+            const created = await api.post('/characters', { name, data });
+            sheetId = created.id;
+            // Обновляем URL без перезагрузки
+            history.replaceState({}, '', `character-sheet.html?id=${sheetId}`);
+        }
+        setStatus('Сохранено', 'saved');
+        isDirty = false;
+        if (manual) toast('Сохранено', 'success');
+        setTimeout(() => { if (!isDirty) setStatus(''); }, 2000);
+    } catch (err) {
+        setStatus('Ошибка: ' + err.message, 'error');
+        if (manual) toast(err.message, 'error');
+    }
+}
+
+function scheduleAutosave() {
+    clearTimeout(saveTimeout);
+    setStatus('Не сохранено', 'saving');
+    saveTimeout = setTimeout(() => saveSheet(false), 3000);
+}
+
+document.getElementById('btn-save').addEventListener('click', () => saveSheet(true));
+
+// ============================================================
+//  ПЕЧАТЬ
+// ============================================================
+document.getElementById('btn-print').addEventListener('click', () => {
+    window.print();
+});
+
+// ============================================================
+//  УДАЛЕНИЕ
+// ============================================================
+document.getElementById('btn-delete').addEventListener('click', async () => {
+    if (!sheetId) {
+        if (confirm('Лист не сохранён. Вернуться к списку?')) {
+            window.location.href = 'characters.html';
+        }
+        return;
+    }
+    if (!confirm('Удалить лист? Действие необратимо.')) return;
+    try {
+        await api.delete(`/characters/${sheetId}`);
+        toast('Лист удалён', 'success');
+        setTimeout(() => location.href = 'characters.html', 500);
+    } catch (err) {
+        toast(err.message, 'error');
+    }
+});
+
+// ============================================================
+//  НАЗАД
+// ============================================================
+document.getElementById('btn-back').addEventListener('click', async () => {
+    if (isDirty) {
+        await saveSheet(false);
+    }
+    location.href = 'characters.html';
+});
+
+// Предупреждение при закрытии страницы с несохранёнными изменениями
+window.addEventListener('beforeunload', (e) => {
+    if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+// ============================================================
+//  ЗАГРУЗКА ПРИ СТАРТЕ
+// ============================================================
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadSession();
+    renderHeader();
+
+    if (!CURRENT_USER) {
+        location.href = 'characters.html';
+        return;
+    }
+
+    sheetId = getIdFromUrl();
+
+    if (sheetId) {
+        try {
+            const sheet = await api.get(`/characters/${sheetId}`);
+            document.getElementById('sheet-name-display').value = sheet.name;
+            fillData(sheet.data || {});
+            setStatus('');
+        } catch (err) {
+            toast('Лист не найден', 'error');
+            setTimeout(() => location.href = 'characters.html', 1000);
+            return;
+        }
+    } else {
+        setStatus('');
+        recalculate();
+    }
+
+    // Сохранение при смене имени — тоже автосейв
+    document.getElementById('sheet-name-display').addEventListener('input', () => {
+        isDirty = true;
+        scheduleAutosave();
+    });
+
+    // Ctrl+S — сохранить
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            saveSheet(true);
+        }
+    });
+});
+</script>
+
+</body>
+</html>

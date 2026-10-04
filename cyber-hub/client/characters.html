@@ -4,43 +4,198 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Листы персонажа — Cyber HUB</title>
+<meta name="description" content="Создавай и храни листы персонажей для Cyberpunk RED онлайн. Автоподсчёт навыков, выбор роли, аватары, сохранение и печать.">
+<meta name="keywords" content="лист персонажа Cyberpunk RED, генератор персонажа, чарник киберпанк, эджраннер, создать персонажа онлайн">
+<meta property="og:title" content="Листы персонажей Cyberpunk RED | Cyber HUB">
+<meta property="og:description" content="Создавай листы персонажей для Cyberpunk RED онлайн.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cyberedhub.ru/characters.html">
+<meta property="og:image" content="https://cyberedhub.ru/favicon.ico">
+<meta property="og:locale" content="ru_RU">
+<link rel="canonical" href="https://cyberedhub.ru/characters.html">
+<link rel="icon" type="image/x-icon" href="favicon.ico?v=3">
 <link rel="stylesheet" href="style.css">
+<style>
+    .sheets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1.2rem;
+        margin-top: 1.5rem;
+    }
+    .sheet-card {
+        background: linear-gradient(180deg, rgba(26,26,40,0.9), rgba(18,18,28,0.9));
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1.2rem;
+        cursor: pointer;
+        transition: all 0.25s;
+        text-align: center;
+        position: relative;
+    }
+    .sheet-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(255, 45, 149, 0.6);
+        box-shadow: 0 8px 24px rgba(255, 45, 149, 0.2);
+    }
+    .sheet-avatar {
+        width: 90px; height: 90px;
+        border-radius: 50%;
+        margin: 0 auto 0.8rem;
+        background: var(--bg-3);
+        border: 3px solid var(--neon-pink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--neon-cyan);
+    }
+    .sheet-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .sheet-card h3 {
+        color: var(--neon-cyan);
+        margin: 0 0 0.3rem;
+        font-size: 1.1rem;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+    .sheet-card .role {
+        font-size: 0.85rem;
+        color: var(--neon-yellow);
+        margin-bottom: 0.4rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .sheet-card .date {
+        font-size: 0.75rem;
+        color: var(--text-dim);
+    }
+    .new-sheet-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        border: 2px dashed rgba(0, 229, 255, 0.4);
+        background: rgba(0, 229, 255, 0.03);
+    }
+    .new-sheet-card:hover {
+        border-color: var(--neon-cyan);
+        background: rgba(0, 229, 255, 0.08);
+    }
+    .new-sheet-card .plus {
+        font-size: 3rem;
+        color: var(--neon-cyan);
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    .new-sheet-card span {
+        color: var(--neon-cyan);
+        font-size: 0.9rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+    }
+    .empty-msg {
+        text-align: center;
+        color: var(--text-dim);
+        padding: 3rem 1rem;
+    }
+</style>
 </head>
 <body>
 
 <main>
-    <h1 class="page-title">Листы персонажа<small>Досье эджраннеров // В разработке</small></h1>
+    <h1 class="page-title">Листы персонажа<small>Cyberpunk RED // Мои эджраннеры</small></h1>
 
-    <div class="card accent-pink mt-2" style="text-align:center; padding: 3rem 2rem;">
-        <h2 style="color:var(--neon-pink)">Раздел в разработке</h2>
-        <p class="text-dim" style="max-width:640px; margin: 1rem auto">
-            Здесь появятся твои листы персонажей: характеристики, навыки, снаряжение,
-            биография и связи с Найт-Сити. Пока функция подготавливается.
-        </p>
-        <div class="quote" style="max-width:600px; margin: 2rem auto; text-align:left">
-            «В этом городе важно не то, кем ты был. Важно — кем ты станешь, когда останешься один на один с хромом и ночью.»
-            <span class="author">— из наставлений фиксера</span>
-        </div>
+    <div id="login-required" class="card accent-pink mt-2 hidden" style="max-width:520px;margin:2rem auto;text-align:center">
+        <p>Чтобы создавать листы персонажей, <a href="account.html">войдите в аккаунт</a>.</p>
     </div>
 
-    <section class="mt-2">
-        <div id="sheet-placeholder"></div>
-    </section>
+    <div id="sheets-container" class="hidden">
+        <div class="flex-between">
+            <p class="text-dim">Твои персонажи. Клик — открыть редактор.</p>
+            <button class="btn pink" id="create-new-btn">+ Создать нового</button>
+        </div>
+        <div id="sheets-grid" class="sheets-grid"></div>
+        <div id="empty-msg" class="empty-msg hidden">
+            <p>У тебя пока нет персонажей.</p>
+            <p style="font-size:0.85rem;margin-top:0.5rem">Создай первого — это займёт пару минут.</p>
+        </div>
+    </div>
 </main>
 
 <script src="app.js"></script>
 <script>
+let sheets = [];
+
 async function initCharactersPage() {
     await loadSession();
     renderHeader();
 
-    const el = document.getElementById('sheet-placeholder');
-    if (CURRENT_USER) {
-        el.innerHTML = `<p class="text-dim">Привет, <b style="color:var(--neon-yellow)">${escapeHtml(CURRENT_USER.username)}</b>. Функция листов появится в следующем обновлении.</p>`;
-    } else {
-        el.innerHTML = `<p class="text-dim">Чтобы сохранять листы, <a href="account.html">войди в аккаунт</a>.</p>`;
+    if (!CURRENT_USER) {
+        document.getElementById('login-required').classList.remove('hidden');
+        return;
+    }
+    document.getElementById('sheets-container').classList.remove('hidden');
+    await loadSheets();
+}
+
+async function loadSheets() {
+    try {
+        sheets = await api.get('/characters');
+        renderSheets();
+    } catch (err) {
+        console.error(err);
+        toast('Ошибка загрузки: ' + err.message, 'error');
     }
 }
+
+function renderSheets() {
+    const grid = document.getElementById('sheets-grid');
+    const empty = document.getElementById('empty-msg');
+
+    const newCard = `
+        <div class="sheet-card new-sheet-card" id="new-card">
+            <div class="plus">+</div>
+            <span>Новый персонаж</span>
+        </div>
+    `;
+
+    if (sheets.length === 0) {
+        grid.innerHTML = newCard;
+        empty.classList.remove('hidden');
+    } else {
+        empty.classList.add('hidden');
+        grid.innerHTML = sheets.map(s => {
+            const avatarHtml = s.avatar
+                ? `<img src="${s.avatar}" alt="">`
+                : (s.name[0] || '?').toUpperCase();
+            const role = s.role ? `<div class="role">${escapeHtml(s.role)}${s.rank ? ' / Ранг ' + s.rank : ''}</div>` : '';
+            const date = new Date(s.updatedAt).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            return `
+                <div class="sheet-card" data-id="${s.id}">
+                    <div class="sheet-avatar">${avatarHtml}</div>
+                    <h3>${escapeHtml(s.name)}</h3>
+                    ${role}
+                    <div class="date">Обновлён: ${date}</div>
+                </div>
+            `;
+        }).join('') + newCard;
+    }
+
+    grid.querySelectorAll('.sheet-card[data-id]').forEach(el => {
+        el.addEventListener('click', () => {
+            window.location.href = `character-sheet.html?id=${el.dataset.id}`;
+        });
+    });
+    document.getElementById('new-card')?.addEventListener('click', () => {
+        window.location.href = 'character-sheet.html';
+    });
+}
+
+document.getElementById('create-new-btn').addEventListener('click', () => {
+    window.location.href = 'character-sheet.html';
+});
 
 document.addEventListener('DOMContentLoaded', initCharactersPage);
 </script>

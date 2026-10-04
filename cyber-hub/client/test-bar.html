@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тест — Бар «У слепого взгляда»</title>
+<link rel="stylesheet" href="style.css">
+<style>
+    body {
+        background: #05050a;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+
+    .bar-scene {
+        position: relative;
+        width: 100%;
+        max-width: 900px;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow:
+            0 0 60px rgba(160, 108, 255, 0.3),
+            0 0 120px rgba(255, 45, 149, 0.15),
+            inset 0 0 0 1px rgba(160, 108, 255, 0.3);
+    }
+    .bar-scene svg {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    /* ---- Мерцание ламп ---- */
+    .lamp-glow {
+        animation: lampFlicker 4s infinite;
+        transform-origin: center;
+    }
+    .lamp-glow:nth-child(2) { animation-delay: 1.3s; }
+    .lamp-glow:nth-child(3) { animation-delay: 2.7s; }
+
+    @keyframes lampFlicker {
+        0%, 100% { opacity: 1; }
+        47% { opacity: 1; }
+        48% { opacity: 0.5; }
+        49% { opacity: 1; }
+        50% { opacity: 0.7; }
+        51% { opacity: 1; }
+    }
+
+    /* ---- Луна пульсирует ---- */
+    .moon {
+        animation: moonPulse 8s ease-in-out infinite;
+    }
+    @keyframes moonPulse {
+        0%, 100% { opacity: 0.9; }
+        50% { opacity: 1; }
+    }
+
+    /* ---- Звёзды мерцают ---- */
+    .star {
+        animation: starTwinkle 3s infinite;
+    }
+    .star:nth-child(2n) { animation-delay: 0.5s; }
+    .star:nth-child(3n) { animation-delay: 1.2s; }
+    .star:nth-child(5n) { animation-delay: 2s; }
+
+    @keyframes starTwinkle {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 1; }
+    }
+
+    /* ---- Пар/дым от бутылок ---- */
+    .steam {
+        animation: steamRise 5s infinite;
+        transform-origin: center bottom;
+    }
+    .steam:nth-child(2) { animation-delay: 1.6s; }
+    .steam:nth-child(3) { animation-delay: 3.2s; }
+
+    @keyframes steamRise {
+        0% { transform: translateY(0) scale(0.8); opacity: 0; }
+        20% { opacity: 0.6; }
+        100% { transform: translateY(-60px) scale(1.4); opacity: 0; }
+    }
+
+    /* ---- Отражение света на стойке ---- */
+    .counter-shine {
+        animation: shine 6s ease-in-out infinite;
+    }
+    @keyframes shine {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 0.8; }
+    }
+
+    /* ---- Лёгкое мерцание неона ---- */
+    .neon-text {
+        animation: neonPulse 3s ease-in-out infinite;
+    }
+    @keyframes neonPulse {
+        0%, 100% { filter: drop-shadow(0 0 6px #00e5ff) drop-shadow(0 0 12px #00e5ff); }
+        50% { filter: drop-shadow(0 0 10px #00e5ff) drop-shadow(0 0 24px #00e5ff) drop-shadow(0 0 40px #00e5ff); }
+    }
+</style>
+</head>
+<body>
+
+<div class="bar-scene">
+    <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+        <!-- ============================================
+             ГРАДИЕНТЫ
+             ============================================ -->
+        <defs>
+            <!-- Небо -->
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1a0b3d"/>
+                <stop offset="50%" stop-color="#2d1461"/>
+                <stop offset="100%" stop-color="#4a1e7a"/>
+            </linearGradient>
+
+            <!-- Стена с полками -->
+            <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#3a1a6a"/>
+                <stop offset="100%" stop-color="#2a1055"/>
+            </linearGradient>
+
+            <!-- Полка -->
+            <linearGradient id="shelf" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#7a4fb8"/>
+                <stop offset="100%" stop-color="#4a2a88"/>
+            </linearGradient>
+
+            <!-- Стойка бара -->
+            <linearGradient id="counter" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#c9a8e8"/>
+                <stop offset="40%" stop-color="#8a5cc0"/>
+                <stop offset="100%" stop-color="#4a2a78"/>
+            </linearGradient>
+
+            <!-- Стойка снизу -->
+            <linearGradient id="counterBase" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#3a1a5a"/>
+                <stop offset="100%" stop-color="#1a0a2a"/>
+            </linearGradient>
+
+            <!-- Пол -->
+            <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#3a1a5a"/>
+                <stop offset="100%" stop-color="#1a0a2a"/>
+            </linearGradient>
+
+            <!-- Луна -->
+            <radialGradient id="moonGrad" cx="0.4" cy="0.4" r="0.7">
+                <stop offset="0%" stop-color="#e8d8ff"/>
+                <stop offset="60%" stop-color="#a88ce8"/>
+                <stop offset="100%" stop-color="#7a5cc0"/>
+            </radialGradient>
+            <radialGradient id="moonHalo" cx="0.5" cy="0.5" r="0.5">
+                <stop offset="0%" stop-color="#a88ce8" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#a88ce8" stop-opacity="0"/>
+            </radialGradient>
+
+            <!-- Свечение лампы -->
+            <radialGradient id="lampGlow" cx="0.5" cy="0.5" r="0.5">
+                <stop offset="0%" stop-color="#ffe8a0" stop-opacity="0.9"/>
+                <stop offset="40%" stop-color="#ffb050" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#ffb050" stop-opacity="0"/>
+            </radialGradient>
+
+            <!-- Градиент для бутылок (светлое стекло) -->
+            <linearGradient id="glass" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+                <stop offset="50%" stop-color="#ffffff" stop-opacity="0.1"/>
+                <stop offset="100%" stop-color="#000000" stop-opacity="0.2"/>
+            </linearGradient>
+        </defs>
+
+        <!-- ============================================
+             ФОН: небо
+             ============================================ -->
+        <rect width="800" height="200" fill="url(#sky)"/>
+
+        <!-- Луна с ореолом -->
+        <circle class="moon" cx="620" cy="80" r="80" fill="url(#moonHalo)"/>
+        <circle class="moon" cx="620" cy="80" r="45" fill="url(#moonGrad)"/>
+        <!-- Кратеры -->
+        <circle cx="608" cy="72" r="6" fill="#8a6cb8" opacity="0.5"/>
+        <circle cx="632" cy="88" r="4" fill="#8a6cb8" opacity="0.4"/>
+        <circle cx="618" cy="95" r="3" fill="#8a6cb8" opacity="0.5"/>
+
+        <!-- Звёзды -->
+        <g fill="#ffffff">
+            <circle class="star" cx="80" cy="40" r="1.5"/>
+            <circle class="star" cx="150" cy="70" r="1"/>
+            <circle class="star" cx="230" cy="30" r="1.5"/>
+            <circle class="star" cx="320" cy="55" r="1"/>
+            <circle class="star" cx="400" cy="25" r="1.5"/>
+            <circle class="star" cx="480" cy="60" r="1"/>
+            <circle class="star" cx="540" cy="30" r="1.5"/>
+            <circle class="star" cx="700" cy="50" r="1.5"/>
+            <circle class="star" cx="750" cy="30" r="1"/>
+            <circle class="star" cx="120" cy="110" r="1"/>
+            <circle class="star" cx="280" cy="120" r="1"/>
+            <circle class="star" cx="500" cy="140" r="1"/>
+            <circle class="star" cx="730" cy="130" r="1"/>
+        </g>
+
+        <!-- ============================================
+             СТЕНА С ПОЛКАМИ
+             ============================================ -->
+        <rect y="200" width="800" height="300" fill="url(#wall)"/>
+
+        <!-- Горизонтальные разделители (декор стены) -->
+        <line x1="0" y1="220" x2="800" y2="220" stroke="#5a3a98" stroke-width="1" opacity="0.5"/>
+        <line x1="0" y1="500" x2="800" y2="500" stroke="#5a3a98" stroke-width="1" opacity="0.5"/>
+
+        <!-- Вертикальные пилоны (декор) -->
+        <rect x="10" y="200" width="15" height="300" fill="#2a1055"/>
+        <rect x="775" y="200" width="15" height="300" fill="#2a1055"/>
+
+        <!-- ============================================
+             ПОЛКА 1 (верхняя)
+             ============================================ -->
+        <rect x="40" y="260" width="720" height="8" fill="url(#shelf)" rx="2"/>
+        <rect x="40" y="260" width="720" height="2" fill="#a88ce8" opacity="0.6"/>
+
+        <!-- Бутылки на полке 1 -->
+        <g>
+            <!-- Левый блок -->
+            <rect x="55" y="220" width="14" height="40" rx="2" fill="#5a3a9c"/>
+            <rect x="55" y="220" width="14" height="40" rx="2" fill="url(#glass)"/>
+            <rect x="57" y="215" width="10" height="8" fill="#5a3a9c"/>
+
+            <rect x="75" y="210" width="16" height="50" rx="2" fill="#a06cff"/>
+            <rect x="75" y="210" width="16" height="50" rx="2" fill="url(#glass)"/>
+            <rect x="78" y="205" width="10" height="8" fill="#a06cff"/>
+
+            <rect x="97" y="230" width="12" height="30" rx="2" fill="#39ff9e"/>
+            <rect x="97" y="230" width="12" height="30" rx="2" fill="url(#glass)"/>
+
+            <rect x="115" y="218" width="15" height="42" rx="2" fill="#ff2d95"/>
+            <rect x="115" y="218" width="15" height="42" rx="2" fill="url(#glass)"/>
+            <rect x="118" y="213" width="9" height="8" fill="#ff2d95"/>
+
+            <rect x="136" y="235" width="11" height="25" rx="2" fill="#ffd60a"/>
+            <rect x="136" y="235" width="11" height="25" rx="2" fill="url(#glass)"/>
+
+            <rect x="153" y="215" width="14" height="45" rx="2" fill="#00e5ff"/>
+            <rect x="153" y="215" width="14" height="45" rx="2" fill="url(#glass)"/>
+            <rect x="156" y="210" width="8" height="8" fill="#00e5ff"/>
+
+            <!-- Правый блок -->
+            <rect x="620" y="225" width="13" height="35" rx="2" fill="#a06cff"/>
+            <rect x="620" y="225" width="13" height="35" rx="2" fill="url(#glass)"/>
+
+            <rect x="638" y="215" width="15" height="45" rx="2" fill="#00e5ff"/>
+            <rect x="638" y="215" width="15" height="45" rx="2" fill="url(#glass)"/>
+
+            <rect x="658" y="230" width="12" height="30" rx="2" fill="#39ff9e"/>
+            <rect x="658" y="230" width="12" height="30" rx="2" fill="url(#glass)"/>
+
+            <rect x="676" y="218" width="14" height="42" rx="2" fill="#ff2d95"/>
+            <rect x="676" y="218" width="14" height="42" rx="2" fill="url(#glass)"/>
+
+            <rect x="695" y="228" width="13" height="32" rx="2" fill="#ffd60a"/>
+            <rect x="695" y="228" width="13" height="32" rx="2" fill="url(#glass)"/>
+
+            <rect x="715" y="222" width="14" height="38" rx="2" fill="#a06cff"/>
+            <rect x="715" y="222" width="14" height="38" rx="2" fill="url(#glass)"/>
+        </g>
+
+        <!-- ============================================
+             ПОЛКА 2 (средняя)
+             ============================================ -->
+        <rect x="40" y="380" width="720" height="8" fill="url(#shelf)" rx="2"/>
+        <rect x="40" y="380" width="720" height="2" fill="#a88ce8" opacity="0.6"/>
+
+        <!-- Бутылки на полке 2 -->
+        <g>
+            <!-- Левый блок -->
+            <rect x="55" y="345" width="13" height="35" rx="2" fill="#ff2d95"/>
+            <rect x="55" y="345" width="13" height="35" rx="2" fill="url(#glass)"/>
+
+            <rect x="73" y="335" width="15" height="45" rx="2" fill="#5a3a9c"/>
+            <rect x="73" y="335" width="15" height="45" rx="2" fill="url(#glass)"/>
+            <rect x="76" y="330" width="9" height="8" fill="#5a3a9c"/>
+
+            <rect x="94" y="350" width="12" height="30" rx="2" fill="#39ff9e"/>
+            <rect x="94" y="350" width="12" height="30" rx="2" fill="url(#glass)"/>
+
+            <rect x="112" y="338" width="14" height="42" rx="2" fill="#ffd60a"/>
+            <rect x="112" y="338" width="14" height="42" rx="2" fill="url(#glass)"/>
+            <rect x="115" y="333" width="8" height="8" fill="#ffd60a"/>
+
+            <rect x="132" y="348" width="13" height="32" rx="2" fill="#00e5ff"/>
+            <rect x="132" y="348" width="13" height="32" rx="2" fill="url(#glass)"/>
+
+            <!-- Центральный блок -->
+            <rect x="380" y="340" width="16" height="40" rx="2" fill="#ff2d95"/>
+            <rect x="380" y="340" width="16" height="40" rx="2" fill="url(#glass)"/>
+            <rect x="383" y="335" width="10" height="8" fill="#ff2d95"/>
+
+            <rect x="403" y="348" width="14" height="32" rx="2" fill="#00e5ff"/>
+            <rect x="403" y="348" width="14" height="32" rx="2" fill="url(#glass)"/>
+
+            <rect x="423" y="355" width="12" height="25" rx="2" fill="#a06cff"/>
+            <rect x="423" y="355" width="12" height="25" rx="2" fill="url(#glass)"/>
+
+            <!-- Правый блок -->
+            <rect x="620" y="345" width="14" height="35" rx="2" fill="#ffd60a"/>
+            <rect x="620" y="345" width="14" height="35" rx="2" fill="url(#glass)"/>
+
+            <rect x="640" y="335" width="15" height="45" rx="2" fill="#a06cff"/>
+            <rect x="640" y="335" width="15" height="45" rx="2" fill="url(#glass)"/>
+
+            <rect x="661" y="350" width="12" height="30" rx="2" fill="#39ff9e"/>
+            <rect x="661" y="350" width="12" height="30" rx="2" fill="url(#glass)"/>
+
+            <rect x="679" y="340" width="14" height="40" rx="2" fill="#ff2d95"/>
+            <rect x="679" y="340" width="14" height="40" rx="2" fill="url(#glass)"/>
+
+            <rect x="699" y="352" width="13" height="28" rx="2" fill="#00e5ff"/>
+            <rect x="699" y="352" width="13" height="28" rx="2" fill="url(#glass)"/>
+
+            <rect x="718" y="342" width="14" height="38" rx="2" fill="#5a3a9c"/>
+            <rect x="718" y="342" width="14" height="38" rx="2" fill="url(#glass)"/>
+        </g>
+
+        <!-- ============================================
+             ПОЛКА 3 (нижняя, на стойке)
+             ============================================ -->
+        <!-- Стеклянные бокалы и бутылки на стойке -->
+        <g>
+            <!-- Бокал 1 (мартини) -->
+            <path d="M 100 480 L 95 460 L 125 460 L 120 480 Z" fill="#00e5ff" opacity="0.4"/>
+            <path d="M 100 480 L 95 460 L 125 460 L 120 480 Z" fill="none" stroke="#a88ce8" stroke-width="1.5"/>
+            <line x1="110" y1="480" x2="110" y2="495" stroke="#a88ce8" stroke-width="1.5"/>
+            <line x1="100" y1="495" x2="120" y2="495" stroke="#a88ce8" stroke-width="1.5"/>
+
+            <!-- Бутылка 1 -->
+            <rect x="150" y="445" width="16" height="50" rx="2" fill="#ff2d95"/>
+            <rect x="150" y="445" width="16" height="50" rx="2" fill="url(#glass)"/>
+            <rect x="153" y="438" width="10" height="10" fill="#ff2d95"/>
+            <rect x="155" y="440" width="6" height="6" fill="#1a0a2a"/>
+
+            <!-- Бутылка 2 (голубая, светится) -->
+            <rect x="200" y="440" width="18" height="55" rx="2" fill="#00e5ff"/>
+            <rect x="200" y="440" width="18" height="55" rx="2" fill="url(#glass)"/>
+            <rect x="203" y="432" width="12" height="10" fill="#00e5ff"/>
+            <rect x="206" y="434" width="6" height="6" fill="#1a0a2a"/>
+            <!-- Наклейка на бутылке -->
+            <rect x="203" y="462" width="12" height="14" fill="#ffffff" opacity="0.3"/>
+            <circle cx="209" cy="469" r="3" fill="#00e5ff" opacity="0.8"/>
+
+            <!-- Бутылка 3 -->
+            <rect x="250" y="450" width="14" height="45" rx="2" fill="#39ff9e"/>
+            <rect x="250" y="450" width="14" height="45" rx="2" fill="url(#glass)"/>
+
+            <!-- Бутылка 4 (красная, рядом) -->
+            <rect x="280" y="455" width="14" height="40" rx="2" fill="#ff8c42"/>
+            <rect x="280" y="455" width="14" height="40" rx="2" fill="url(#glass)"/>
+
+            <!-- Бокал 2 (вино) -->
+            <path d="M 340 460 Q 340 490 355 490 Q 370 490 370 460 Z" fill="#ff2d95" opacity="0.5"/>
+            <path d="M 340 460 Q 340 490 355 490 Q 370 490 370 460 Z" fill="none" stroke="#a88ce8" stroke-width="1.5"/>
+            <line x1="355" y1="490" x2="355" y2="500" stroke="#a88ce8" stroke-width="1.5"/>
+
+            <!-- Бутылка 5 -->
+            <rect x="400" y="445" width="16" height="50" rx="2" fill="#a06cff"/>
+            <rect x="400" y="445" width="16" height="50" rx="2" fill="url(#glass)"/>
+            <rect x="403" y="438" width="10" height="10" fill="#a06cff"/>
+
+            <!-- Бутылка 6 (голубая, светится) -->
+            <rect x="450" y="442" width="18" height="53" rx="2" fill="#00e5ff"/>
+            <rect x="450" y="442" width="18" height="53" rx="2" fill="url(#glass)"/>
+            <rect x="453" y="434" width="12" height="10" fill="#00e5ff"/>
+            <rect x="456" y="436" width="6" height="6" fill="#1a0a2a"/>
+            <rect x="453" y="465" width="12" height="14" fill="#ffffff" opacity="0.3"/>
+
+            <!-- Бутылка 7 -->
+            <rect x="500" y="450" width="14" height="45" rx="2" fill="#ffd60a"/>
+            <rect x="500" y="450" width="14" height="45" rx="2" fill="url(#glass)"/>
+
+            <!-- Бутылка 8 -->
+            <rect x="535" y="448" width="16" height="47" rx="2" fill="#5a3a9c"/>
+            <rect x="535" y="448" width="16" height="47" rx="2" fill="url(#glass)"/>
+            <rect x="538" y="440" width="10" height="10" fill="#5a3a9c"/>
+
+            <!-- Бутылка 9 -->
+            <rect x="580" y="445" width="16" height="50" rx="2" fill="#ff2d95"/>
+            <rect x="580" y="445" width="16" height="50" rx="2" fill="url(#glass)"/>
+
+            <!-- Стакан 1 (светлый) -->
+            <rect x="630" y="465" width="20" height="30" rx="2" fill="#00e5ff" opacity="0.3"/>
+            <rect x="630" y="465" width="20" height="30" rx="2" fill="none" stroke="#a88ce8" stroke-width="1.5"/>
+
+            <!-- Бутылка 10 -->
+            <rect x="680" y="445" width="16" height="50" rx="2" fill="#39ff9e"/>
+            <rect x="680" y="445" width="16" height="50" rx="2" fill="url(#glass)"/>
+
+            <!-- Бутылка 11 -->
+            <rect x="720" y="450" width="14" height="45" rx="2" fill="#ffd60a"/>
+            <rect x="720" y="450" width="14" height="45" rx="2" fill="url(#glass)"/>
+        </g>
+
+        <!-- ============================================
+             БАРНАЯ СТОЙКА
+             ============================================ -->
+        <rect y="500" width="800" height="18" fill="url(#counter)"/>
+        <!-- Подсветка на стойке -->
+        <rect class="counter-shine" y="500" width="800" height="3" fill="#e8d8ff" opacity="0.6"/>
+        <!-- Борт стойки -->
+        <rect y="518" width="800" height="32" fill="url(#counterBase)"/>
+        <rect y="518" width="800" height="1" fill="#a88ce8" opacity="0.5"/>
+
+        <!-- ============================================
+             ПОЛ
+             ============================================ -->
+        <rect y="550" width="800" height="50" fill="url(#floor)"/>
+
+        <!-- Плитка на полу -->
+        <g opacity="0.3" stroke="#a88ce8" stroke-width="0.5">
+            <line x1="0" y1="570" x2="800" y2="570"/>
+            <line x1="0" y1="590" x2="800" y2="590"/>
+            <line x1="100" y1="550" x2="100" y2="600"/>
+            <line x1="200" y1="550" x2="200" y2="600"/>
+            <line x1="300" y1="550" x2="300" y2="600"/>
+            <line x1="400" y1="550" x2="400" y2="600"/>
+            <line x1="500" y1="550" x2="500" y2="600"/>
+            <line x1="600" y1="550" x2="600" y2="600"/>
+            <line x1="700" y1="550" x2="700" y2="600"/>
+        </g>
+
+        <!-- ============================================
+             ВИСЯЧИЕ ЛАМПЫ
+             ============================================ -->
+        <!-- Лампа 1 -->
+        <g>
+            <line x1="200" y1="0" x2="200" y2="90" stroke="#3a1a5a" stroke-width="2"/>
+            <circle class="lamp-glow" cx="200" cy="130" r="70" fill="url(#lampGlow)"/>
+            <ellipse cx="200" cy="100" rx="22" ry="8" fill="#2a1055"/>
+            <path d="M 178 100 Q 200 145 222 100 Z" fill="#ffb050" opacity="0.9"/>
+            <path d="M 178 100 Q 200 145 222 100 Z" fill="none" stroke="#ffe8a0" stroke-width="1.5"/>
+            <!-- Свечение от лампы -->
+            <ellipse cx="200" cy="130" rx="30" ry="12" fill="#ffe8a0" opacity="0.6"/>
+        </g>
+
+        <!-- Лампа 2 -->
+        <g>
+            <line x1="400" y1="0" x2="400" y2="90" stroke="#3a1a5a" stroke-width="2"/>
+            <circle class="lamp-glow" cx="400" cy="130" r="70" fill="url(#lampGlow)"/>
+            <ellipse cx="400" cy="100" rx="22" ry="8" fill="#2a1055"/>
+            <path d="M 378 100 Q 400 145 422 100 Z" fill="#ffb050" opacity="0.9"/>
+            <path d="M 378 100 Q 400 145 422 100 Z" fill="none" stroke="#ffe8a0" stroke-width="1.5"/>
+            <ellipse cx="400" cy="130" rx="30" ry="12" fill="#ffe8a0" opacity="0.6"/>
+        </g>
+
+        <!-- Лампа 3 -->
+        <g>
+            <line x1="600" y1="0" x2="600" y2="90" stroke="#3a1a5a" stroke-width="2"/>
+            <circle class="lamp-glow" cx="600" cy="130" r="70" fill="url(#lampGlow)"/>
+            <ellipse cx="600" cy="100" rx="22" ry="8" fill="#2a1055"/>
+            <path d="M 578 100 Q 600 145 622 100 Z" fill="#ffb050" opacity="0.9"/>
+            <path d="M 578 100 Q 600 145 622 100 Z" fill="none" stroke="#ffe8a0" stroke-width="1.5"/>
+            <ellipse cx="600" cy="130" rx="30" ry="12" fill="#ffe8a0" opacity="0.6"/>
+        </g>
+
+        <!-- ============================================
+             ПАР/ДЫМ ОТ НАПИТКОВ
+             ============================================ -->
+        <g opacity="0.7">
+            <ellipse class="steam" cx="209" cy="430" rx="8" ry="12" fill="#a88ce8" opacity="0.4"/>
+            <ellipse class="steam" cx="459" cy="430" rx="8" ry="12" fill="#a88ce8" opacity="0.4"/>
+            <ellipse class="steam" cx="359" cy="440" rx="6" ry="10" fill="#ff2d95" opacity="0.4"/>
+        </g>
+
+        <!-- ============================================
+             РАСТЕНИЯ ПО БОКАМ
+             ============================================ -->
+        <!-- Левое растение -->
+        <g>
+            <path d="M 30 600 Q 20 500 60 420 Q 70 500 55 600 Z" fill="#2a6a4a" opacity="0.85"/>
+            <path d="M 50 600 Q 40 480 80 400 Q 90 500 75 600 Z" fill="#3a8a5a" opacity="0.8"/>
+            <path d="M 20 600 Q 10 520 40 460 Q 50 530 40 600 Z" fill="#1a5a3a" opacity="0.9"/>
+        </g>
+
+        <!-- Правое растение -->
+        <g>
+            <path d="M 770 600 Q 780 500 740 420 Q 730 500 745 600 Z" fill="#2a6a4a" opacity="0.85"/>
+            <path d="M 750 600 Q 760 480 720 400 Q 710 500 725 600 Z" fill="#3a8a5a" opacity="0.8"/>
+        </g>
+
+        <!-- ============================================
+             НЕОНОВАЯ ВЫВЕСКА (опционально, поверх)
+             ============================================ -->
+        <text class="neon-text" x="400" y="30" font-family="monospace" font-size="20"
+              font-weight="bold" fill="#00e5ff" text-anchor="middle" letter-spacing="6">
+            AFTERLIFE
+        </text>
+    </svg>
+</div>
+
+</body>
+</html>

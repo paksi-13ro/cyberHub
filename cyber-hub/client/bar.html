@@ -4,13 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Бар «У слепого взгляда» — Cyber HUB</title>
+<meta name="description" content="Тематическое меню коктейлей по Cyberpunk RED. Закажи коктейль или придумай свой, попади на доску почёта. Добровольное пожертвование на развитие проекта.">
+<meta name="keywords" content="бар Cyberpunk RED, коктейли киберпанк, Cyberpunk 2077 бар, донаты, поддержка проекта, Afterlife">
+<meta property="og:title" content="Бар «У слепого взгляда» | Cyber HUB">
+<meta property="og:description" content="Коктейли в стиле Cyberpunk RED. Закажи или придумай свой.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cyberedhub.ru/bar.html">
+<meta property="og:image" content="https://cyberedhub.ru/favicon.ico">
+<meta property="og:locale" content="ru_RU">
+<link rel="canonical" href="https://cyberedhub.ru/bar.html">
+<link rel="icon" type="image/x-icon" href="favicon.ico?v=3">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <main>
     <h1 class="page-title">Бар «У слепого взгляда»<small>Donations & Cocktails // Node 24/7</small></h1>
-
+    <div class="bar-donation-banner">
+        <div class="bar-donation-title">Кинь эдди на развитие проекта — закажи коктейль.</div>
+        <div class="bar-donation-sub">
+            Легенды уходят. Идея остаётся.
+        </div>
+    </div>
     <div class="quote">
         «Здесь не спрашивают, откуда ты пришёл. Здесь спрашивают, что ты пьёшь. Плата — не кредиты. Плата — память.»
         <span class="author">— вывеска над барной стойкой</span>
@@ -18,7 +33,8 @@
 
     <div class="flex-between mt-2">
         <h2>Меню бара</h2>
-        <div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn pink" id="open-admin-add">+ Добавить (админ)</button>
             <button class="btn yellow" id="open-create-cocktail">+ Придумать свой коктейль</button>
         </div>
     </div>
@@ -61,7 +77,12 @@ async function renderCocktails() {
             <p class="text-dim" style="min-height:3.4em">${escapeHtml(c.desc)}</p>
             <div class="flex-between mt-1">
                 <b style="color:var(--neon-yellow); font-size:1.2rem">${formatMoney(c.price)}</b>
-                <button class="btn yellow order-btn" data-id="${c.id}">Заказать</button>
+                <div style="display:flex; gap:.4rem">
+                    <button class="btn yellow order-btn" data-id="${c.id}">Заказать</button>
+                    ${CURRENT_USER && CURRENT_USER.isAdmin ? `
+                        <button class="btn pink delete-cocktail-btn mini" data-id="${c.id}">Удалить</button>
+                    ` : ''}
+                </div>
             </div>
             <p class="text-dim" style="font-size:.75rem; margin-top:.4rem">Автор: ${escapeHtml(c.author || 'Легенда бара')}</p>
         </div>
@@ -69,6 +90,19 @@ async function renderCocktails() {
 
     document.querySelectorAll('.order-btn').forEach(b => {
         b.addEventListener('click', () => openOrderModal(b.dataset.id));
+    });
+
+    document.querySelectorAll('.delete-cocktail-btn').forEach(b => {
+        b.addEventListener('click', async () => {
+            if (!confirm('Удалить коктейль из меню?')) return;
+            try {
+                await api.delete(`/donations/cocktails/${b.dataset.id}`);
+                toast('Коктейль удалён', 'success');
+                renderCocktails();
+            } catch (err) {
+                toast(err.message, 'error');
+            }
+        });
     });
 }
 
@@ -85,12 +119,12 @@ function openOrderModal(cocktailId) {
             <p class="text-dim mb-1">${escapeHtml(c.desc)}</p>
             <form class="form" id="order-form">
                 <label>Ваше имя (или ник)</label>
-                <input type="text" id="donor-name" maxlength="40" value="${CURRENT_USER ? escapeHtml(CURRENT_USER.username) : ''}" required>
+                <input type="text" id="donor-name" maxlength="40" value="${CURRENT_USER ? escapeHtml(CURRENT_USER.displayName || CURRENT_USER.username) : ''}" required>
                 <label>Сумма (не меньше ${formatMoney(c.price)})</label>
                 <input type="number" id="donor-amount" min="${c.price}" step="50" value="${c.price}" required>
                 <label>Комментарий (необязательно)</label>
                 <input type="text" id="donor-comment" maxlength="100" placeholder="За что пьём?">
-                <button type="submit" class="btn yellow mt-1">Оплатить и выпить</button>
+                <button type="submit" class="btn yellow mt-1" id="order-submit">Оплатить и выпить</button>
                 <p class="msg error" id="order-msg"></p>
             </form>
         </div>
@@ -103,38 +137,64 @@ function openOrderModal(cocktailId) {
 
     overlay.querySelector('#order-form').addEventListener('submit', async e => {
         e.preventDefault();
-        const name = document.getElementById('donor-name').value.trim();
         const amount = parseInt(document.getElementById('donor-amount').value, 10);
         const comment = document.getElementById('donor-comment').value.trim();
         const msg = document.getElementById('order-msg');
+        const submitBtn = document.getElementById('order-submit');
+
+        if (!amount || amount < c.price) {
+            msg.textContent = `Минимум ${formatMoney(c.price)}.`;
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Создаём платёж…';
 
         try {
-            await api.post('/donations', { name, amount, comment, cocktailId: c.id });
-            close();
-            toast(`Спасибо, ${name}! ${c.name} уже на стойке.`, 'success');
-            renderDonations();
+            // Для ЮKassa создаём платёж
+            const data = await api.post('/payments/create', {
+                name: c.name,
+                desc: comment || '',
+                price: amount,
+                isNewCocktail: false,
+                cocktailId: c.id
+            });
+            // Перенаправляем на страницу оплаты ЮKassa
+            window.location.href = data.confirmationUrl;
         } catch (err) {
             msg.textContent = err.message;
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Оплатить и выпить';
         }
     });
 }
 
 function openCreateModal() {
+    const isAdminUser = CURRENT_USER && CURRENT_USER.isAdmin;
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.innerHTML = `
         <div class="modal">
             <button class="modal-close">×</button>
             <h2>Придумать свой коктейль</h2>
-            <p class="text-dim mb-1">Он появится в меню. Чем дороже — тем выше в топе доски почёта.</p>
+            <p class="text-dim mb-1">Коктейль появится в меню после оплаты. Минимум 500 ₽.</p>
             <form class="form" id="create-form">
                 <label>Название</label>
                 <input type="text" id="c-name" maxlength="60" required>
                 <label>Описание</label>
                 <textarea id="c-desc" maxlength="300" required></textarea>
-                <label>Цена (₽, минимум 100)</label>
-                <input type="number" id="c-price" min="100" step="50" value="500" required>
-                <button type="submit" class="btn pink mt-1">Добавить в меню</button>
+                <label>Цена (₽, минимум 500)</label>
+                <input type="number" id="c-price" min="500" step="50" value="500" required>
+                ${isAdminUser ? `
+                    <label style="display:flex; align-items:center; gap:.5rem; cursor:pointer">
+                        <input type="checkbox" id="c-skip-payment" style="width:auto">
+                        Добавить как админ (без оплаты)
+                    </label>
+                ` : ''}
+                <button type="submit" class="btn pink mt-1" id="c-submit">
+                    ${isAdminUser ? 'Добавить в меню' : 'Оплатить и добавить'}
+                </button>
                 <p class="msg error" id="create-msg"></p>
             </form>
         </div>
@@ -150,15 +210,38 @@ function openCreateModal() {
         const name = document.getElementById('c-name').value.trim();
         const desc = document.getElementById('c-desc').value.trim();
         const price = parseInt(document.getElementById('c-price').value, 10);
+        const skipEl = document.getElementById('c-skip-payment');
+        const skipPayment = skipEl ? skipEl.checked : false;
         const msg = document.getElementById('create-msg');
+        const submitBtn = document.getElementById('c-submit');
+
+        if (price < 500 && !skipPayment) {
+            msg.textContent = 'Минимальная цена — 500 ₽.';
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Создаём платёж…';
 
         try {
-            await api.post('/donations/cocktails', { name, desc, price });
-            close();
-            toast('Коктейль добавлен в меню', 'success');
-            renderCocktails();
+            if (skipPayment) {
+                // Админ — создаём напрямую
+                await api.post('/donations/cocktails', { name, desc, price, skipPayment: true });
+                close();
+                toast('Коктейль добавлен', 'success');
+                renderCocktails();
+            } else {
+                // Пользователь — платёж через ЮKassa
+                const data = await api.post('/payments/create', {
+                    name, desc, price,
+                    isNewCocktail: true
+                });
+                window.location.href = data.confirmationUrl;
+            }
         } catch (err) {
             msg.textContent = err.message;
+            submitBtn.disabled = false;
+            submitBtn.textContent = skipPayment ? 'Добавить в меню' : 'Оплатить и добавить';
         }
     });
 }
@@ -169,7 +252,7 @@ async function renderDonations() {
     try {
         const top = await api.get('/donations/top');
         if (top.length === 0) {
-            topWrap.innerHTML = '<p class="text-dim">Пока никто не оставил вклад. Будь первым — закажи «Серебряную руку».</p>';
+            topWrap.innerHTML = '<p class="text-dim">Пока никто не оставил вклад. Будь первым.</p>';
         } else {
             topWrap.innerHTML = top.map((t, i) => `
                 <div class="flex-between" style="padding:.6rem 0; border-bottom:1px dashed var(--border)">
@@ -214,8 +297,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderHeader();
     renderCocktails();
     renderDonations();
+
+    // Проверка возврата с ЮKassa
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.get('payment') === 'success') {
+        toast('Оплата прошла! Коктейль появится через несколько секунд.', 'success');
+        history.replaceState({}, '', 'bar.html');
+        // Перезагружаем список через 3 секунды (ждём webhook)
+        setTimeout(() => { renderCocktails(); renderDonations(); }, 3000);
+    }
+
     document.getElementById('open-create-cocktail').addEventListener('click', openCreateModal);
+
+    const adminBtn = document.getElementById('open-admin-add');
+    if (CURRENT_USER && CURRENT_USER.isAdmin) {
+        adminBtn.addEventListener('click', openAdminAddModal);
+    } else {
+        adminBtn.style.display = 'none';
+    }
 });
+
+// ---------- Модалка "админ добавляет коктейль" (без оплаты, любая цена) ----------
+function openAdminAddModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal">
+            <button class="modal-close">×</button>
+            <h2>Добавить коктейль (админ)</h2>
+            <p class="text-dim mb-1">Коктейль появится в меню без оплаты. Любая цена.</p>
+            <form class="form" id="admin-cocktail-form">
+                <label>Название</label>
+                <input type="text" id="a-name" maxlength="60" required>
+                <label>Описание</label>
+                <textarea id="a-desc" maxlength="300" required></textarea>
+                <label>Цена (₽)</label>
+                <input type="number" id="a-price" min="0" step="10" value="100" required>
+                <button type="submit" class="btn pink mt-1">Добавить в меню</button>
+                <p class="msg error" id="a-msg"></p>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.querySelector('.modal-close').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('#admin-cocktail-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const name = document.getElementById('a-name').value.trim();
+        const desc = document.getElementById('a-desc').value.trim();
+        const price = parseInt(document.getElementById('a-price').value, 10);
+        const msg = document.getElementById('a-msg');
+
+        try {
+            await api.post('/donations/cocktails', { name, desc, price, skipPayment: true });
+            close();
+            toast('Коктейль добавлен', 'success');
+            renderCocktails();
+        } catch (err) {
+            msg.textContent = err.message;
+        }
+    });
+}
+
 </script>
 </body>
 </html>

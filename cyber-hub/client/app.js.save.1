@@ -65,11 +65,7 @@ async function login(username, password) {
     return data;
 }
 
-async function register(username, password, email, agree) {
-    const data = await api.post('/auth/register', { username, password, email, agree });
-    CURRENT_USER = data.user;
-    return data;
-}
+
 
 async function logout() {
     try { await api.post('/auth/logout'); } catch {}

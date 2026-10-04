@@ -3,8 +3,245 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cyber HUB — Главная</title>
+<title>Cyber HUB — сайт сообщества Cyberpunk RED | Материалы, листы персонажей, бар</title>
+<meta name="google-site-verification" content="zEZHWbCCQqi1xNK5J7O3LKwwq2VeLwNaFCe178SOL4o" />
+<meta name="description" content="Cyber HUB — русскоязычный сайт сообщества настольной ролевой игры Cyberpunk RED. Материалы, лор, правила, карты, листы персонажей, чат и бар «У слепого взгляда».">
+<meta name="keywords" content="Cyberpunk RED, Cyberpunk 2077, киберпанк, настольная игра, НРИ, Night City, Найт-Сити, листы персонажей, материалы, генератор персонажа, RPG, TTRPG">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="Cyber HUB — сайт сообщества Cyberpunk RED">
+<meta property="og:description" content="Материалы, листы персонажей, чат и бар для игроков в Cyberpunk RED.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cyberedhub.ru">
+<meta property="og:image" content="https://cyberedhub.ru/favicon.ico">
+<meta property="og:locale" content="ru_RU">
+<link rel="canonical" href="https://cyberedhub.ru/">
+<link rel="icon" type="image/x-icon" href="favicon.ico?v=3">
 <link rel="stylesheet" href="style.css">
+<style>
+    .hero-card {
+        background: linear-gradient(160deg, rgba(26,26,40,0.95), rgba(18,18,28,0.9));
+        border: 1px solid rgba(0,229,255,0.25);
+        border-left: 4px solid var(--neon-pink);
+        border-radius: 12px;
+        padding: 2rem 2.2rem;
+        margin: 2rem 0 3rem;
+        box-shadow: 0 0 40px rgba(255,45,149,0.1), inset 0 0 60px rgba(0,229,255,0.03);
+    }
+    .hero-card .quote {
+        margin: 0 0 1.5rem;
+        padding-left: 1.2rem;
+        border-left: 3px solid var(--neon-pink);
+        font-style: italic;
+        color: #b6b6c8;
+        font-size: 1rem;
+        line-height: 1.7;
+    }
+    .hero-card .quote .author {
+        display: block;
+        margin-top: 0.5rem;
+        font-style: normal;
+        font-size: 0.85rem;
+        color: var(--neon-yellow);
+        letter-spacing: 1px;
+    }
+    .hero-card p {
+        font-size: 1.05rem;
+        line-height: 1.7;
+        margin-bottom: 1rem;
+    }
+    .hero-card p:last-of-type { margin-bottom: 0; }
+
+    .inside-outside {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.8rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+    .inside-outside h4 {
+        font-family: 'Orbitron', 'Rajdhani', sans-serif;
+        color: var(--neon-cyan);
+        font-size: 0.9rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 0.8rem;
+    }
+    .inside-outside h4.plans { color: var(--neon-yellow); }
+    .inside-outside ul { list-style: none; padding: 0; margin: 0; }
+    .inside-outside li {
+        padding: 0.35rem 0;
+        color: var(--text);
+        font-size: 0.95rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    .inside-outside li::before {
+        content: '▸';
+        color: var(--neon-cyan);
+        flex-shrink: 0;
+    }
+    .inside-outside h4.plans + ul li::before { color: var(--neon-yellow); }
+    .inside-outside li b { color: #ffffff; }
+
+    .news-section { margin: 3rem 0; }
+    .news-section h2 {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+    .news-list { display: grid; gap: 1rem; margin-top: 1rem; }
+    .news-item {
+        background: linear-gradient(180deg, rgba(26,26,40,0.85), rgba(18,18,28,0.85));
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--neon-cyan);
+        border-radius: 8px;
+        padding: 1.2rem 1.4rem;
+        position: relative;
+    }
+    .news-item.pinned {
+        border-left-color: var(--neon-yellow);
+        box-shadow: 0 0 20px rgba(255,214,10,0.1);
+    }
+    .news-item .pin-badge {
+        display: inline-block;
+        font-size: 0.65rem;
+        letter-spacing: 1px;
+        padding: 0.1rem 0.5rem;
+        border: 1px solid var(--neon-yellow);
+        color: var(--neon-yellow);
+        border-radius: 999px;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+    .news-item .date {
+        font-size: 0.75rem;
+        color: var(--text-dim);
+        margin-top: 0.6rem;
+        display: block;
+    }
+    .news-item h3 {
+        color: var(--neon-cyan);
+        margin: 0 0 0.5rem;
+        font-size: 1.1rem;
+        text-transform: none;
+        letter-spacing: 0;
+    }
+    .news-item .body {
+        white-space: pre-wrap;
+        color: var(--text);
+        line-height: 1.6;
+        font-size: 0.95rem;
+    }
+    .news-item .del-btn {
+        position: absolute;
+        top: 0.8rem;
+        right: 0.9rem;
+        color: var(--neon-pink);
+        font-size: 1.2rem;
+        text-decoration: none;
+        opacity: 0.6;
+        cursor: pointer;
+    }
+    .news-item .del-btn:hover { opacity: 1; }
+
+    /* БЛОК ПАРТНЁРА SLAIMI SHOP */
+    .partner-section { margin: 3rem 0; }
+    .partner-section h2 {
+        color: var(--neon-yellow);
+        text-shadow: var(--shadow-yellow);
+        margin-bottom: 1.5rem;
+    }
+    .partner-card {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 1.5rem;
+        background: linear-gradient(160deg, rgba(26,26,40,0.95), rgba(18,18,28,0.9));
+        border: 1px solid rgba(160,108,255,0.3);
+        border-left: 4px solid var(--neon-purple);
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 0 40px rgba(160,108,255,0.08);
+    }
+    .partner-badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        letter-spacing: 2px;
+        padding: 0.25rem 0.7rem;
+        border: 1px solid var(--neon-purple);
+        color: var(--neon-purple);
+        border-radius: 999px;
+        text-transform: uppercase;
+        margin-bottom: 0.8rem;
+    }
+    .partner-lore h3 {
+        color: var(--neon-cyan);
+        font-size: 1.3rem;
+        margin-bottom: 0.8rem;
+        letter-spacing: 1px;
+    }
+    .partner-lore p {
+        font-size: 0.95rem;
+        line-height: 1.7;
+        margin-bottom: 0.8rem;
+    }
+    .partner-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
+    .partner-features span {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.7rem;
+        background: rgba(160,108,255,0.1);
+        border: 1px solid rgba(160,108,255,0.3);
+        border-radius: 999px;
+        color: var(--text);
+    }
+    .partner-order {
+        background: rgba(0,0,0,0.25);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1.3rem;
+    }
+    .partner-order h3 {
+        color: var(--neon-yellow);
+        font-size: 1.05rem;
+        margin-bottom: 0.5rem;
+    }
+    .partner-order .form { max-width: 100%; gap: 0.7rem; }
+    .partner-order .form label { font-size: 0.78rem; margin-bottom: -0.3rem; }
+
+    .feedback-modal textarea { min-height: 150px; }
+    .feedback-cta {
+        text-align: center;
+        margin: 3rem 0 1rem;
+        padding: 2rem 1rem;
+        background: linear-gradient(135deg, rgba(255,45,149,0.06), rgba(0,229,255,0.04));
+        border: 1px dashed rgba(255,45,149,0.3);
+        border-radius: 12px;
+    }
+    .feedback-cta h3 {
+        color: var(--neon-pink);
+        margin: 0 0 0.6rem;
+        font-size: 1.2rem;
+    }
+    .feedback-cta p {
+        color: var(--text-dim);
+        margin-bottom: 1.2rem;
+        font-size: 0.92rem;
+    }
+
+    @media (max-width: 860px) {
+        .partner-card { grid-template-columns: 1fr; padding: 1.3rem; }
+        .partner-lore h3 { font-size: 1.1rem; }
+        .partner-lore p { font-size: 0.9rem; }
+        .partner-order { padding: 1rem; }
+    }
+</style>
 </head>
 <body>
 
@@ -13,73 +250,382 @@
         <small>Cyber HUB // Сводка о проекте</small>
     </h1>
 
-    <section class="hero" style="margin: 2rem 0 3rem;">
-        <div class="card accent-pink" style="padding: 2.2rem;">
-            <div class="quote" style="margin-top:0">
-                «Знаешь, что я понял, пока меня не прикончили? Жизнь — это не строчка в базе данных, не чип в голове и не кредиты на счету. Это миг, когда ты стоишь на краю крыши, смотришь на неоновый дождь и решаешь: сгореть дотла или уйти в тень. Входи. Напиши свою историю.»
-                <span class="author">— из записей фиксера, найденных в Посмертии</span>
-            </div>
-            <p style="font-size:1.05rem">
-                <b style="color:var(--neon-cyan)">Cyber HUB</b> — убежище для тех, кто играет в
-                <b style="color:var(--neon-cyan)">Cyberpunk RED</b>: настольные ролевые сессии в мире
-                Красного времени. Здесь хранятся материалы, листы персонажей, собирается комьюнити
-                и работает бар <b style="color:var(--neon-yellow)">«У слепого взгляда»</b> — место,
-                где за коктейль платят не кредитами, а памятью.
-            </p>
+    <section class="hero-card">
+        <div class="quote">
+            «Знаешь, что я понял, пока меня не прикончили? Жизнь — это не строчка в базе данных, не чип в голове и не кредиты на счету. Это миг, когда ты стоишь на краю крыши, смотришь на неоновый дождь и решаешь: сгореть дотла или уйти в тень. Входи. Напиши свою историю.»
+            <span class="author">— из записей фиксера, найденных в Посмертии</span>
         </div>
-    </section>
 
-    <div class="grid cols-3">
-        <div class="card accent-cyan">
-            <h3>📼 Материалы</h3>
-            <p class="text-dim">Правила, хоумбрю, снаряжение, NPC, карты и шпаргалки. Всё, что нужно, чтобы сесть за стол и не облажаться.</p>
-            <a href="materials.html" class="btn mt-1">Смотреть</a>
-        </div>
-        <div class="card accent-pink">
-            <h3>🧬 Листы персонажа</h3>
-            <p class="text-dim">Создавай, храни и редактируй своих эджраннеров. Пока базовая версия — расширим позже.</p>
-            <a href="characters.html" class="btn pink mt-1">Открыть</a>
-        </div>
-        <div class="card accent-yellow">
-            <h3>🍸 Бар «У слепого взгляда»</h3>
-            <p class="text-dim">Закажи коктейль, придумай свой, попади на доску почёта. Каждый заказ — вклад в проект.</p>
-            <a href="bar.html" class="btn yellow mt-1">В бар</a>
-        </div>
-    </div>
+        <p>
+            <b style="color:var(--neon-cyan)">Cyber HUB</b> — убежище для тех, кто играет в
+            <b style="color:var(--neon-cyan)">Cyberpunk RED</b>: настольные ролевые сессии в мире
+            Красного времени. Здесь хранятся материалы, листы персонажей, собирается комьюнити
+            и работает бар <b style="color:var(--neon-yellow)">«У слепого взгляда»</b> — место,
+            где за коктейль платят не кредитами, а памятью.
+        </p>
+        <p style="color:var(--text-dim); font-size:0.95rem">
+            Это фан-проект, сделанный игроками для игроков. Все материалы, включая правила,
+            лор Найт-Сити, карты, снаряжение и хоумбрю, собраны здесь, чтобы ты мог быстрее
+            сесть за стол и не облажаться. Заходи, регистрируйся, добавляй свои наработки,
+            веди листы персонажей и участвуй в жизни сообщества.
+        </p>
 
-    <section style="margin-top: 3rem;">
-        <h2>Сводка о сайте</h2>
-        <div class="grid cols-2">
-            <div class="card accent-purple">
-                <h3>Что здесь есть</h3>
-                <ul style="list-style:none; padding-left:0; line-height:2">
-                    <li>• <b>Материалы</b> — пополняются администрацией</li>
-                    <li>• <b>Листы персонажей</b> — привязаны к аккаунту</li>
-                    <li>• <b>Избранное</b> — сохраняй то, что пригодится за столом</li>
-                    <li>• <b>Бар</b> — коктейли, донаты, доска почёта</li>
+        <div class="inside-outside">
+            <div>
+                <h4>Что уже есть</h4>
+                <ul>
+                    <li><b>Материалы</b> — правила, лор, карты, снаряжение, NPC, хоумбрю</li>
+                    <li><b>Листы персонажей</b> — создавай, редактируй, сохраняй онлайн</li>
+                    <li><b>Чат</b> — общение сообщества с группами</li>
+                    <li><b>Бар «У слепого взгляда»</b> — коктейли, донаты, доска почёта</li>
+                    <li><b>Личный кабинет</b> — профиль, аватар, избранное</li>
                 </ul>
             </div>
-            <div class="card accent-cyan">
-                <h3>Как участвовать</h3>
-                <p class="text-dim">Зарегистрируйся через логин/пароль, Google, Яндекс или ВК — веди своих персонажей, добавляй материалы (если есть права) и заходи в бар. Мир Красного времени строится руками тех, кто не боится испачкаться.</p>
-                <a href="account.html" class="btn mt-1">Создать аккаунт</a>
+            <div>
+                <h4 class="plans">Что планируется</h4>
+                <ul>
+                    <li><b>Подписка Cyber HUB+</b> — расширенные фишки для мастеров и игроков</li>
+                    <li><b>Автозаполняемые листы</b> — по роли, с автоподсчётом навыков</li>
+                    <li><b>Листы врагов и NPC</b> — готовые болванки для мастеров</li>
+                    <li><b>Готовые ваншоты</b> — короткие приключения на одну сессию</li>
+                    <li><b>Многое другое</b> — идеи добавляются по вашим предложениям</li>
+                </ul>
             </div>
         </div>
     </section>
 
-    <section style="margin-top: 3rem;">
-        <h2>Цитаты улиц</h2>
-        <div class="grid cols-2">
-            <div class="quote">«В Найт-Сити нет счастливых концов. Есть только те, кто успел уйти до финала.»<span class="author">— Роуг, фиксер</span></div>
-            <div class="quote">«Проснись, самурай. У нас есть город, который нужно сжечь.»<span class="author">— Джонни Сильверхенд</span></div>
-            <div class="quote">«Мы не герои. Мы просто те, кто не боится умереть молодыми.»<span class="author">— Мейн, эджраннер</span></div>
-            <div class="quote">«Ты не станешь легендой, если не сделаешь хоть что-то, о чём будут шептаться в барах.»<span class="author">— из дневника Дэвида Мартинеса</span></div>
-            <div class="quote">«Красное время убивает по-разному. Иногда — медленно, тихо и за чашкой кофе.»<span class="author">— Трейс Сантьяго</span></div>
-            <div class="quote">«Помни: в этом городе либо ты сжигаешь, либо сгораешь. Третьего не дано.»<span class="author">— из записей фиксера</span></div>
+    <section class="news-section">
+        <div class="flex-between">
+            <h2>📡 Новости проекта</h2>
+            <button id="add-news-btn" class="btn pink hidden" style="font-size:0.8rem;padding:0.5rem 1rem">+ Добавить новость</button>
         </div>
+        <div id="news-list" class="news-list">
+            <p class="text-dim">Загрузка…</p>
+        </div>
+    </section>
+
+    <!-- ПАРТНЁР — SLAIMI SHOP -->
+    <section class="partner-section">
+        <h2>🤝 Партнёр проекта — Slaimi Shop</h2>
+
+        <div class="partner-card">
+            <div class="partner-lore">
+                <div class="partner-badge">✦ Официальный партнёр</div>
+                <h3>Твои герои заслуживают быть на столе</h3>
+                <p>
+                    В Найт-Сити всё решают детали. Каждый шрам, каждая имплантация,
+                    каждая пуля в обойме — это история. А история должна быть
+                    <b>видимой</b>.
+                </p>
+                <p>
+                    <b style="color:var(--neon-cyan)">Slaimi Shop</b> — мастерская,
+                    где печатают миниатюры для настольных ролевых игр. Здесь ты можешь
+                    заказать своего эджраннера, фиксерскую крысу с рынка, корпоратского
+                    пса или сольного киллера — <b>в 28–32 мм</b>, с деталями, которые
+                    не стыдно поставить на игровое поле.
+                </p>
+                <p>
+                    Мастерская работает с <b>фотополимерными принтерами</b> —
+                    каждая фигурка получается чёткой, без «лестниц» и брака.
+                    Готовые миниатюры доступны из каталога, а если нужно что-то
+                    особенное — присылай референс, и они <b>сделают модель с нуля</b>.
+                </p>
+                <div class="partner-features">
+                    <span>🎲 Готовые миниатюры</span>
+                    <span>🖨️ Печать на заказ</span>
+                    <span>🎨 Под покраску</span>
+                    <span>📦 Доставка по РФ</span>
+                </div>
+                <a href="https://vk.ru/slaimi_shop" target="_blank" rel="noopener" class="btn pink mt-1">
+                    Перейти в сообщество →
+                </a>
+            </div>
+
+            <div class="partner-order">
+                <h3>📝 Заказать фигурку</h3>
+                <p class="text-dim" style="font-size:0.85rem;margin-bottom:1rem">
+                    Заполни форму и прикрепи референс — заявка уйдёт в мастерскую Slaimi Shop.
+                    Оплата, доставка и все детали заказа обсуждаются напрямую с владельцем.
+                </p>
+                <form class="form" id="partner-form">
+                    <label>Кого печатаем? (имя или описание)</label>
+                    <input type="text" id="p-name" required maxlength="120" placeholder="Например: Соло с имплантом руки">
+
+                    <label>Размер / масштаб</label>
+                    <select id="p-scale">
+                        <option value="28 мм">28 мм (стандарт)</option>
+                        <option value="32 мм" selected>32 мм (популярный)</option>
+                        <option value="54 мм">54 мм (крупная)</option>
+                        <option value="Другой">Другой (уточню)</option>
+                    </select>
+
+                    <label>Описание, пожелания</label>
+                    <textarea id="p-desc" maxlength="2000" required placeholder="Опиши позу, оружие, импланты, стиль. Что важно передать в фигурке?"></textarea>
+
+                    <label>Как с вами связаться?</label>
+                    <input type="text" id="p-contact" required maxlength="120" placeholder="ВК, Telegram, email или телефон">
+
+                    <label>Референс (картинка, до 5 МБ)</label>
+                    <input type="file" id="p-file" accept="image/*">
+                    <p class="text-dim" style="font-size:0.75rem;margin-top:-0.4rem;margin-bottom:0.3rem">
+                        JPG/PNG/WEBP. Прикрепи фото или скетч — так мастер лучше поймёт, что нужно.
+                    </p>
+
+                    <button type="submit" class="btn yellow mt-1" id="p-submit">
+                        Отправить заявку
+                    </button>
+                    <p class="msg" id="p-msg"></p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section class="feedback-cta">
+        <h3>💡 Есть идея? Что-то не работает?</h3>
+        <p>Расскажи нам о предложениях, пожеланиях или проблемах — мы читаем всё.</p>
+        <button id="feedback-btn" class="btn pink">Написать разработчику</button>
     </section>
 </main>
 
 <script src="app.js"></script>
+<script>
+let isAdmin = false;
+
+// ============================================================
+//  НОВОСТИ
+// ============================================================
+async function loadNews() {
+    const wrap = document.getElementById('news-list');
+    try {
+        const news = await api.get('/news');
+        if (news.length === 0) {
+            wrap.innerHTML = '<p class="text-dim">Новостей пока нет.</p>';
+            return;
+        }
+        wrap.innerHTML = news.map(n => {
+            const date = new Date(n.createdAt).toLocaleDateString('ru-RU', {
+                day: '2-digit', month: 'long', year: 'numeric'
+            });
+            const del = isAdmin
+                ? `<a href="#" class="del-btn" data-id="${n.id}" title="Удалить">×</a>`
+                : '';
+            return `
+                <div class="news-item ${n.isPinned ? 'pinned' : ''}">
+                    ${n.isPinned ? '<span class="pin-badge">📌 Закреплено</span>' : ''}
+                    ${del}
+                    <h3>${escapeHtml(n.title)}</h3>
+                    <div class="body">${escapeHtml(n.body)}</div>
+                    <span class="date">${date}</span>
+                </div>
+            `;
+        }).join('');
+
+        if (isAdmin) {
+            wrap.querySelectorAll('.del-btn').forEach(btn => {
+                btn.addEventListener('click', async e => {
+                    e.preventDefault();
+                    if (!confirm('Удалить новость?')) return;
+                    try {
+                        await api.delete(`/news/${btn.dataset.id}`);
+                        toast('Новость удалена', 'success');
+                        loadNews();
+                    } catch (err) { toast(err.message, 'error'); }
+                });
+            });
+        }
+    } catch (err) {
+        wrap.innerHTML = `<p class="msg error">Ошибка загрузки: ${escapeHtml(err.message)}</p>`;
+    }
+}
+
+// ============================================================
+//  ДОБАВЛЕНИЕ НОВОСТИ (админ)
+// ============================================================
+function openAddNewsModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal">
+            <button class="modal-close">×</button>
+            <h2>Новая новость</h2>
+            <form class="form" id="add-news-form">
+                <label>Заголовок</label>
+                <input type="text" id="news-title" maxlength="150" required>
+                <label>Текст</label>
+                <textarea id="news-body" maxlength="3000" required style="min-height:150px"></textarea>
+                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;margin-top:.5rem">
+                    <input type="checkbox" id="news-pinned" style="width:auto">
+                    Закрепить (вверху списка)
+                </label>
+                <button type="submit" class="btn pink mt-1">Опубликовать</button>
+                <p class="msg error" id="news-msg"></p>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.querySelector('.modal-close').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('#add-news-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const title = document.getElementById('news-title').value.trim();
+        const body = document.getElementById('news-body').value.trim();
+        const isPinned = document.getElementById('news-pinned').checked;
+        const msg = document.getElementById('news-msg');
+
+        try {
+            await api.post('/news', { title, body, isPinned });
+            close();
+            toast('Новость опубликована', 'success');
+            loadNews();
+        } catch (err) { msg.textContent = err.message; }
+    });
+}
+
+// ============================================================
+//  ОБРАТНАЯ СВЯЗЬ
+// ============================================================
+function openFeedbackModal() {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal feedback-modal">
+            <button class="modal-close">×</button>
+            <h2>Предложения и пожелания</h2>
+            <p class="text-dim mb-1" style="font-size:0.9rem">
+                Сообщение уйдёт напрямую разработчику на почту. Мы читаем всё.
+            </p>
+            <form class="form" id="feedback-form">
+                <label>Тема (необязательно)</label>
+                <input type="text" id="fb-subject" maxlength="100" placeholder="Например: Идея по бара">
+                <label>Сообщение</label>
+                <textarea id="fb-message" maxlength="2000" required placeholder="Расскажи подробнее…"></textarea>
+                <button type="submit" class="btn pink mt-1" id="fb-submit">Отправить</button>
+                <p class="msg" id="fb-msg"></p>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.querySelector('.modal-close').addEventListener('click', close);
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    overlay.querySelector('#feedback-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const subject = document.getElementById('fb-subject').value.trim();
+        const message = document.getElementById('fb-message').value.trim();
+        const msg = document.getElementById('fb-msg');
+        const submitBtn = document.getElementById('fb-submit');
+
+        if (!message) { msg.textContent = 'Напиши сообщение'; return; }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Отправка…';
+        try {
+            const res = await api.post('/users/feedback', { subject, message });
+            msg.classList.add('success');
+            msg.textContent = res.message || 'Спасибо! Сообщение отправлено.';
+            setTimeout(close, 1500);
+        } catch (err) {
+            msg.classList.add('error');
+            msg.textContent = err.message;
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Отправить';
+        }
+    });
+}
+
+// ============================================================
+//  ФОРМА ПАРТНЁРА SLAIMI SHOP — отправка на сервер с файлом
+// ============================================================
+function initPartnerForm() {
+    const form = document.getElementById('partner-form');
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('p-name').value.trim();
+        const scale = document.getElementById('p-scale').value;
+        const desc = document.getElementById('p-desc').value.trim();
+        const contact = document.getElementById('p-contact').value.trim();
+        const fileInput = document.getElementById('p-file');
+        const msg = document.getElementById('p-msg');
+        const btn = document.getElementById('p-submit');
+
+        if (!name || !desc || !contact) {
+            msg.textContent = 'Заполни все поля';
+            msg.classList.add('error');
+            msg.classList.remove('success');
+            return;
+        }
+
+        if (fileInput.files[0] && fileInput.files[0].size > 5 * 1024 * 1024) {
+            msg.textContent = 'Файл больше 5 МБ — уменьши или загрузи без него';
+            msg.classList.add('error');
+            msg.classList.remove('success');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Отправка…';
+        msg.textContent = '';
+        msg.classList.remove('error', 'success');
+
+        try {
+            const fd = new FormData();
+            fd.append('name', name);
+            fd.append('scale', scale);
+            fd.append('description', desc);
+            fd.append('contact', contact);
+            if (fileInput.files[0]) fd.append('reference', fileInput.files[0]);
+
+            const res = await api.post('/partner/order', fd);
+
+            msg.classList.add('success');
+            msg.textContent = '✓ ' + (res.message || 'Заявка принята! Мы свяжемся с тобой.');
+            toast('Заявка отправлена', 'success');
+
+            form.reset();
+            document.getElementById('p-scale').value = '32 мм';
+        } catch (err) {
+            msg.classList.add('error');
+            msg.classList.remove('success');
+            msg.textContent = err.message;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Отправить заявку';
+        }
+    });
+}
+
+// ============================================================
+//  СТАРТ
+// ============================================================
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadSession();
+    renderHeader();
+
+    isAdmin = CURRENT_USER && CURRENT_USER.isAdmin;
+    if (isAdmin) {
+        document.getElementById('add-news-btn').classList.remove('hidden');
+        document.getElementById('add-news-btn').addEventListener('click', openAddNewsModal);
+    }
+
+    document.getElementById('feedback-btn').addEventListener('click', () => {
+        if (!CURRENT_USER) {
+            toast('Сначала войди в аккаунт', 'warn');
+            setTimeout(() => location.href = 'account.html', 800);
+            return;
+        }
+        openFeedbackModal();
+    });
+
+    loadNews();
+    initPartnerForm();
+});
+</script>
 </body>
 </html>
